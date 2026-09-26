@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.employee.mapper.EmployeeMapper">
+
+    <resultMap id="EmployeeResultMap" type="com.priyex.hrms.employee.model.Employee">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="employeeCode" column="employee_code"/>
+        <result property="userId" column="user_id"/>
+        <result property="firstName" column="first_name"/>
+        <result property="middleName" column="middle_name"/>
+        <result property="lastName" column="last_name"/>
+        <result property="dateOfBirth" column="date_of_birth"/>
+        <result property="gender" column="gender"/>
+        <result property="maritalStatus" column="marital_status"/>
+        <result property="bloodGroup" column="blood_group"/>
+        <result property="nationality" column="nationality"/>
+        <result property="photoUrl" column="photo_url"/>
+        <result property="personalEmail" column="personal_email"/>
+        <result property="workEmail" column="work_email"/>
+        <result property="personalPhone" column="personal_phone"/>
+        <result property="workPhone" column="work_phone"/>
+        <result property="departmentId" column="department_id"/>
+        <result property="designationId" column="designation_id"/>
+        <result property="branchId" column="branch_id"/>
+        <result property="locationId" column="location_id"/>
+        <result property="teamId" column="team_id"/>
+        <result property="jobGradeId" column="job_grade_id"/>
+        <result property="costCenterId" column="cost_center_id"/>
+        <result property="reportingManagerId" column="reporting_manager_id"/>
+        <result property="employmentType" column="employment_type"/>
+        <result property="joiningDate" column="joining_date"/>
+        <result property="confirmationDate" column="confirmation_date"/>
+        <result property="probationEndDate" column="probation_end_date"/>
+        <result property="noticePeriodDays" column="notice_period_days"/>
+        <result property="status" column="status"/>
+        <result property="departmentName" column="department_name"/>
+        <result property="designationName" column="designation_name"/>
+        <result property="branchName" column="branch_name"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="EmployeeResultMap">
+        SELECT e.*, d.name AS department_name, des.name AS designation_name, b.name AS branch_name
+        FROM employees e
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN designations des ON des.id = e.designation_id
+        LEFT JOIN branches b ON b.id = e.branch_id
+        WHERE e.id = #{id} AND e.company_id = #{companyId}
+    </select>
+
+    <select id="searchEmployees" resultMap="EmployeeResultMap">
+        SELECT e.*, d.name AS department_name, des.name AS designation_name, b.name AS branch_name
+        FROM employees e
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN designations des ON des.id = e.designation_id
+        LEFT JOIN branches b ON b.id = e.branch_id
+        WHERE e.company_id = #{companyId}
+        <if test="query != null and query != ''">
+            AND (
+                LOWER(e.first_name || ' ' || e.last_name) LIKE LOWER(CONCAT('%', #{query}, '%'))
+                OR LOWER(e.work_email) LIKE LOWER(CONCAT('%', #{query}, '%'))
+                OR LOWER(e.employee_code) LIKE LOWER(CONCAT('%', #{query}, '%'))
+            )
+        </if>
+        <if test="departmentId != null">
+            AND e.department_id = #{departmentId}
+        </if>
+        <if test="status != null and status != ''">
+            AND e.status = #{status}
+        </if>
+        ORDER BY e.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countEmployees" resultType="long">
+        SELECT COUNT(e.id)
+        FROM employees e
+        WHERE e.company_id = #{companyId}
+        <if test="query != null and query != ''">
+            AND (
+                LOWER(e.first_name || ' ' || e.last_name) LIKE LOWER(CONCAT('%', #{query}, '%'))
+                OR LOWER(e.work_email) LIKE LOWER(CONCAT('%', #{query}, '%'))
+                OR LOWER(e.employee_code) LIKE LOWER(CONCAT('%', #{query}, '%'))
+            )
+        </if>
+        <if test="departmentId != null">
+            AND e.department_id = #{departmentId}
+        </if>
+        <if test="status != null and status != ''">
+            AND e.status = #{status}
+        </if>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO employees (
+            company_id, employee_code, first_name, middle_name, last_name,
+            work_email, personal_phone, work_phone, department_id, designation_id,
+            branch_id, employment_type, joining_date, status, created_by, updated_by
+        ) VALUES (
+            #{companyId}, #{employeeCode}, #{firstName}, #{middleName}, #{lastName},
+            #{workEmail}, #{personalPhone}, #{workPhone}, #{departmentId}, #{designationId},
+            #{branchId}, #{employmentType}, #{joiningDate}, #{status}, #{createdBy}, #{updatedBy}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE employees
+        SET first_name = #{firstName},
+            last_name = #{lastName},
+            work_email = #{workEmail},
+            personal_phone = #{personalPhone},
+            department_id = #{departmentId},
+            designation_id = #{designationId},
+            employment_type = #{employmentType},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <update id="softDelete">
+        UPDATE employees
+        SET status = 'EXITED', updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <select id="generateEmployeeCode" resultType="string">
+        SELECT 'EMP-' || LPAD(CAST(COALESCE(MAX(id), 0) + 1001 AS TEXT), 4, '0')
+        FROM employees
+    </select>
+
+</mapper>
