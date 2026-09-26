@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.leave.mapper.LeaveMapper">
+
+    <resultMap id="LeaveResultMap" type="com.priyex.hrms.leave.model.LeaveRequest">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="leaveType" column="leave_type"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="totalDays" column="total_days"/>
+        <result property="reason" column="reason"/>
+        <result property="status" column="status"/>
+        <result property="approverComment" column="approver_comment"/>
+        <result property="approvedBy" column="approved_by"/>
+        <result property="approvedAt" column="approved_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findAllByCompanyId" resultMap="LeaveResultMap">
+        SELECT lr.*, (e.first_name || ' ' || e.last_name) AS employee_name
+        FROM leave_requests lr
+        LEFT JOIN employees e ON e.id = lr.employee_id
+        WHERE lr.company_id = #{companyId}
+        ORDER BY lr.id DESC
+    </select>
+
+    <select id="findById" resultMap="LeaveResultMap">
+        SELECT lr.*, (e.first_name || ' ' || e.last_name) AS employee_name
+        FROM leave_requests lr
+        LEFT JOIN employees e ON e.id = lr.employee_id
+        WHERE lr.id = #{id} AND lr.company_id = #{companyId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO leave_requests (
+            company_id, employee_id, leave_type, start_date, end_date, total_days, reason, status
+        ) VALUES (
+            #{companyId}, #{employeeId}, #{leaveType}, #{startDate}, #{endDate}, #{totalDays}, #{reason}, #{status}
+        )
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE leave_requests
+        SET status = #{status},
+            approver_comment = #{approverComment},
+            approved_by = #{approvedBy},
+            approved_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+</mapper>
