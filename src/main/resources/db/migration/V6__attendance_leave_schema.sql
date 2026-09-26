@@ -4,8 +4,8 @@
 
 CREATE TABLE IF NOT EXISTS leave_requests (
     id                  BIGSERIAL       PRIMARY KEY,
-    company_id          BIGINT          NOT NULL REFERENCES companies(id),
-    employee_id         BIGINT          NOT NULL REFERENCES employees(id),
+    company_id          BIGINT          NOT NULL DEFAULT 1,
+    employee_id         BIGINT,
     leave_type          VARCHAR(50)     NOT NULL, -- Annual Leave, Casual Leave, Sick Leave, Maternity Leave
     start_date          DATE            NOT NULL,
     end_date            DATE            NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     reason              TEXT,
     status              VARCHAR(30)     NOT NULL DEFAULT 'PENDING', -- PENDING, APPROVED, REJECTED, CANCELLED
     approver_comment    TEXT,
-    approved_by         BIGINT          REFERENCES users(id),
+    approved_by         BIGINT,
     approved_at         TIMESTAMPTZ,
     created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
