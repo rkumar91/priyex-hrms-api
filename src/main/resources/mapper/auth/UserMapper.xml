@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.auth.mapper.UserMapper">
+
+    <resultMap id="UserResultMap" type="com.priyex.hrms.auth.model.User">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="email" column="email"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="displayName" column="display_name"/>
+        <result property="avatarUrl" column="avatar_url"/>
+        <result property="phone" column="phone"/>
+        <result property="active" column="is_active"/>
+        <result property="locked" column="is_locked"/>
+        <result property="failedLoginAttempts" column="failed_login_attempts"/>
+        <result property="lockedUntil" column="locked_until"/>
+        <result property="lastLoginAt" column="last_login_at"/>
+        <result property="passwordChangedAt" column="password_changed_at"/>
+        <result property="mustChangePassword" column="must_change_password"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="version" column="version"/>
+    </resultMap>
+
+    <select id="findById" resultMap="UserResultMap">
+        SELECT id, company_id, employee_id, email, password_hash, display_name,
+               avatar_url, phone, is_active, is_locked, failed_login_attempts,
+               locked_until, last_login_at, password_changed_at, must_change_password,
+               created_at, created_by, updated_at, updated_by, version
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByEmail" resultMap="UserResultMap">
+        SELECT id, company_id, employee_id, email, password_hash, display_name,
+               avatar_url, phone, is_active, is_locked, failed_login_attempts,
+               locked_until, last_login_at, password_changed_at, must_change_password,
+               created_at, created_by, updated_at, updated_by, version
+        FROM users
+        WHERE email = #{email}
+    </select>
+
+    <select id="findRolesByUserId" resultType="java.lang.String">
+        SELECT r.name
+        FROM roles r
+        INNER JOIN user_roles ur ON ur.role_id = r.id
+        WHERE ur.user_id = #{userId}
+          AND r.is_active = TRUE
+    </select>
+
+    <select id="findPermissionsByUserId" resultType="java.lang.String">
+        SELECT DISTINCT p.code
+        FROM permissions p
+        INNER JOIN role_permissions rp ON rp.permission_id = p.id
+        INNER JOIN user_roles ur ON ur.role_id = rp.role_id
+        WHERE ur.user_id = #{userId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (company_id, employee_id, email, password_hash, display_name,
+                           avatar_url, phone, is_active, must_change_password, created_by)
+        VALUES (#{companyId}, #{employeeId}, #{email}, #{passwordHash}, #{displayName},
+                #{avatarUrl}, #{phone}, #{active}, #{mustChangePassword}, #{createdBy})
+    </insert>
+
+    <update id="updateLastLogin">
+        UPDATE users SET last_login_at = #{lastLoginAt}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="incrementFailedLoginAttempts">
+        UPDATE users SET failed_login_attempts = failed_login_attempts + 1, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="resetFailedLoginAttempts">
+        UPDATE users SET failed_login_attempts = 0, is_locked = FALSE, locked_until = NULL, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="lockUser">
+        UPDATE users SET is_locked = TRUE, locked_until = #{lockedUntil}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="unlockUser">
+        UPDATE users SET is_locked = FALSE, locked_until = NULL, failed_login_attempts = 0, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE users SET password_hash = #{passwordHash}, password_changed_at = NOW(),
+                         must_change_password = FALSE, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM users
+    </select>
+
+    <select id="findAll" resultMap="UserResultMap">
+        SELECT id, company_id, employee_id, email, password_hash, display_name,
+               avatar_url, phone, is_active, is_locked, failed_login_attempts,
+               locked_until, last_login_at, password_changed_at, must_change_password,
+               created_at, created_by, updated_at, updated_by, version
+        FROM users
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+</mapper>

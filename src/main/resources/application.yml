@@ -1,0 +1,138 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Priyex HRMS — Default Application Configuration
+# Profile-specific overrides: application-local.yml, application-prod.yml
+# ═══════════════════════════════════════════════════════════════════════
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+spring:
+  application:
+    name: priyex-hrms-api
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  # ── Datasource ──
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/hrms_db}
+    username: ${SPRING_DATASOURCE_USERNAME:hrms_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:hrms_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: hrms-hikari-pool
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:15}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+      idle-timeout: 300000
+      max-lifetime: 600000
+      connection-timeout: 20000
+      leak-detection-threshold: 60000
+
+  # ── Flyway Migrations ──
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    out-of-order: false
+    clean-disabled: true
+
+  # ── Mail (adapter — configure per environment) ──
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        transport:
+          protocol: smtp
+
+  # ── Servlet ──
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 25MB
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+    time-zone: UTC
+
+# ── MyBatis ──
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.priyex.hrms
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+    cache-enabled: false
+    lazy-loading-enabled: false
+
+# ── JWT ──
+app:
+  jwt:
+    secret: ${JWT_SECRET:CHANGE-THIS-IN-PRODUCTION-hrms-256-bit-secret-key-min-32-chars!!}
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION:3600000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  file:
+    upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+    allowed-extensions: pdf,png,jpg,jpeg,gif,doc,docx,xls,xlsx,csv,txt,zip
+    max-size-mb: 10
+
+# ── Actuator ──
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: when-authorized
+  info:
+    env:
+      enabled: true
+
+# ── OpenAPI / Swagger ──
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+  show-actuator: false
+
+# ── Logging ──
+logging:
+  level:
+    root: INFO
+    com.priyex.hrms: DEBUG
+    org.mybatis: INFO
+    org.springframework.security: INFO
+    org.flywaydb: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"

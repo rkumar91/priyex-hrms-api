@@ -1,0 +1,17 @@
+# ═══════════════════════════════════════════════
+# Test profile — uses the same PostgreSQL hrms_db
+# ═══════════════════════════════════════════════
+spring:
+  profiles:
+    active: test
+  flyway:
+    enabled: false
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/hrms_db}
+    username: ${SPRING_DATASOURCE_USERNAME:hrms_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:hrms_password}
+
+logging:
+  level:
+    root: WARN
+    com.priyex.hrms: INFO
