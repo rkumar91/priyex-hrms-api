@@ -1,6 +1,6 @@
 package com.priyex.hrms.payroll.controller;
 
-import com.priyex.hrms.common.dto.ApiResponse;
+import com.priyex.hrms.common.response.ApiResponse;
 import com.priyex.hrms.employee.model.Employee;
 import com.priyex.hrms.employee.service.EmployeeService;
 import com.priyex.hrms.payroll.dto.CtcBreakdownResponse;
