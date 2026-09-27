@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.payroll.mapper.PayrollMapper">
+
+    <resultMap id="PayrollRunResultMap" type="com.priyex.hrms.payroll.model.PayrollRun">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="payrollMonth" column="payroll_month"/>
+        <result property="payrollYear" column="payroll_year"/>
+        <result property="payrollName" column="payroll_name"/>
+        <result property="totalEmployees" column="total_employees"/>
+        <result property="totalGross" column="total_gross"/>
+        <result property="totalDeductions" column="total_deductions"/>
+        <result property="totalNet" column="total_net"/>
+        <result property="status" column="status"/>
+        <result property="disbursementDate" column="disbursement_date"/>
+        <result property="processedBy" column="processed_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="EmployeePayslipResultMap" type="com.priyex.hrms.payroll.model.EmployeePayslip">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="payrollRunId" column="payroll_run_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeCode" column="employee_code"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="departmentName" column="department_name"/>
+        <result property="designationName" column="designation_name"/>
+        <result property="panNumber" column="pan_number"/>
+        <result property="uanNumber" column="uan_number"/>
+        <result property="pfNumber" column="pf_number"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="bankAccountNumber" column="bank_account_number"/>
+        <result property="bankIfsc" column="bank_ifsc"/>
+        <result property="payrollMonth" column="payroll_month"/>
+        <result property="payrollYear" column="payroll_year"/>
+        <result property="payPeriod" column="pay_period"/>
+        <result property="workingDays" column="working_days"/>
+        <result property="paidDays" column="paid_days"/>
+        <result property="lopDays" column="lop_days"/>
+        <result property="annualCtc" column="annual_ctc"/>
+        <result property="monthlyGross" column="monthly_gross"/>
+        <result property="basicSalary" column="basic_salary"/>
+        <result property="hra" column="hra"/>
+        <result property="specialAllowance" column="special_allowance"/>
+        <result property="medicalAllowance" column="medical_allowance"/>
+        <result property="conveyanceAllowance" column="conveyance_allowance"/>
+        <result property="performanceBonus" column="performance_bonus"/>
+        <result property="totalEarnings" column="total_earnings"/>
+        <result property="epfEmployee" column="epf_employee"/>
+        <result property="esicEmployee" column="esic_employee"/>
+        <result property="professionalTax" column="professional_tax"/>
+        <result property="tdsTax" column="tds_tax"/>
+        <result property="totalDeductions" column="total_deductions"/>
+        <result property="epfEmployer" column="epf_employer"/>
+        <result property="esicEmployer" column="esic_employer"/>
+        <result property="gratuity" column="gratuity"/>
+        <result property="netSalary" column="net_salary"/>
+        <result property="status" column="status"/>
+        <result property="paymentDate" column="payment_date"/>
+        <result property="paymentMode" column="payment_mode"/>
+        <result property="transactionReference" column="transaction_reference"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findRunsByCompanyId" resultMap="PayrollRunResultMap">
+        SELECT *
+        FROM payroll_runs
+        WHERE company_id = #{companyId}
+        ORDER BY payroll_year DESC, payroll_month DESC
+    </select>
+
+    <select id="findRunById" resultMap="PayrollRunResultMap">
+        SELECT *
+        FROM payroll_runs
+        WHERE id = #{id} AND company_id = #{companyId}
+    </select>
+
+    <select id="findRunByPeriod" resultMap="PayrollRunResultMap">
+        SELECT *
+        FROM payroll_runs
+        WHERE company_id = #{companyId} AND payroll_month = #{month} AND payroll_year = #{year}
+    </select>
+
+    <insert id="insertPayrollRun" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO payroll_runs (
+            company_id, payroll_month, payroll_year, payroll_name, total_employees,
+            total_gross, total_deductions, total_net, status, disbursement_date,
+            processed_by, created_at, updated_at
+        ) VALUES (
+            #{companyId}, #{payrollMonth}, #{payrollYear}, #{payrollName}, #{totalEmployees},
+            #{totalGross}, #{totalDeductions}, #{totalNet}, #{status}, #{disbursementDate},
+            #{processedBy}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="updatePayrollRun">
+        UPDATE payroll_runs
+        SET
+            total_employees = #{totalEmployees},
+            total_gross = #{totalGross},
+            total_deductions = #{totalDeductions},
+            total_net = #{totalNet},
+            status = #{status},
+            disbursement_date = #{disbursementDate},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="findPayslipsByRunId" resultMap="EmployeePayslipResultMap">
+        SELECT 
+            p.*,
+            e.employee_code,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            d.name AS department_name,
+            e.designation_name,
+            e.pan_number,
+            e.uan_number,
+            e.pf_number,
+            e.bank_name,
+            e.bank_account_number,
+            e.bank_ifsc
+        FROM employee_payslips p
+        JOIN employees e ON p.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE p.payroll_run_id = #{runId}
+        ORDER BY e.employee_code ASC
+    </select>
+
+    <select id="findPayslipsByEmployeeId" resultMap="EmployeePayslipResultMap">
+        SELECT 
+            p.*,
+            e.employee_code,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            d.name AS department_name,
+            e.designation_name,
+            e.pan_number,
+            e.uan_number,
+            e.pf_number,
+            e.bank_name,
+            e.bank_account_number,
+            e.bank_ifsc
+        FROM employee_payslips p
+        JOIN employees e ON p.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE p.employee_id = #{employeeId}
+        ORDER BY p.payroll_year DESC, p.payroll_month DESC
+    </select>
+
+    <select id="findPayslipById" resultMap="EmployeePayslipResultMap">
+        SELECT 
+            p.*,
+            e.employee_code,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            d.name AS department_name,
+            e.designation_name,
+            e.pan_number,
+            e.uan_number,
+            e.pf_number,
+            e.bank_name,
+            e.bank_account_number,
+            e.bank_ifsc
+        FROM employee_payslips p
+        JOIN employees e ON p.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE p.id = #{id}
+    </select>
+
+    <select id="findPayslipByEmployeeAndPeriod" resultMap="EmployeePayslipResultMap">
+        SELECT 
+            p.*,
+            e.employee_code,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            d.name AS department_name,
+            e.designation_name,
+            e.pan_number,
+            e.uan_number,
+            e.pf_number,
+            e.bank_name,
+            e.bank_account_number,
+            e.bank_ifsc
+        FROM employee_payslips p
+        JOIN employees e ON p.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE p.employee_id = #{employeeId} AND p.payroll_month = #{month} AND p.payroll_year = #{year}
+    </select>
+
+    <insert id="insertPayslip" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO employee_payslips (
+            company_id, payroll_run_id, employee_id, payroll_month, payroll_year, pay_period,
+            working_days, paid_days, lop_days, annual_ctc, monthly_gross,
+            basic_salary, hra, special_allowance, medical_allowance, conveyance_allowance,
+            performance_bonus, total_earnings, epf_employee, esic_employee, professional_tax,
+            tds_tax, total_deductions, epf_employer, esic_employer, gratuity,
+            net_salary, status, payment_date, payment_mode, transaction_reference,
+            created_at, updated_at
+        ) VALUES (
+            #{companyId}, #{payrollRunId}, #{employeeId}, #{payrollMonth}, #{payrollYear}, #{payPeriod},
+            #{workingDays}, #{paidDays}, #{lopDays}, #{annualCtc}, #{monthlyGross},
+            #{basicSalary}, #{hra}, #{specialAllowance}, #{medicalAllowance}, #{conveyanceAllowance},
+            #{performanceBonus}, #{totalEarnings}, #{epfEmployee}, #{esicEmployee}, #{professionalTax},
+            #{tdsTax}, #{totalDeductions}, #{epfEmployer}, #{esicEmployer}, #{gratuity},
+            #{netSalary}, #{status}, #{paymentDate}, #{paymentMode}, #{transactionReference},
+            NOW(), NOW()
+        )
+    </insert>
+
+    <delete id="deletePayslipsByRunId">
+        DELETE FROM employee_payslips
+        WHERE payroll_run_id = #{runId}
+    </delete>
+
+</mapper>
