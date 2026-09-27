@@ -27,8 +27,8 @@ public class EmployeeController {
     private final EmployeeService employeeService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('emp.view_all') or hasRole('SUPER_ADMIN')")
-    @Operation(summary = "Search & list employees with pagination")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Search & list employees with pagination (public info for regular employees)")
     public ResponseEntity<ApiResponse<PagedResponse<Employee>>> getEmployees(
             @CurrentUser UserPrincipal currentUser,
             @RequestParam(required = false) String query,
@@ -39,11 +39,58 @@ public class EmployeeController {
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         PagedResponse<Employee> result = employeeService.getEmployees(companyId, query, departmentId, status, page, size);
+
+        boolean isPrivileged = currentUser != null && (
+                currentUser.hasRole("SUPER_ADMIN") ||
+                currentUser.hasRole("ADMIN") ||
+                currentUser.hasRole("HR_ADMIN")
+        );
+
+        if (!isPrivileged && result.getContent() != null) {
+            for (Employee emp : result.getContent()) {
+                emp.setPersonalPhone(null);
+                emp.setPersonalEmail(null);
+                emp.setBankAccountNumber(null);
+                emp.setBankIfsc(null);
+                emp.setAddressLine1(null);
+                emp.setCity(null);
+                emp.setState(null);
+                emp.setPostalCode(null);
+            }
+        }
+
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get current logged-in employee profile")
+    public ResponseEntity<ApiResponse<Employee>> getMyProfile(@CurrentUser UserPrincipal currentUser) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        Long userId = currentUser != null ? currentUser.getId() : null;
+        Long employeeId = currentUser != null ? currentUser.getEmployeeId() : null;
+
+        Employee profile = employeeService.getMyProfile(companyId, userId, employeeId);
+        return ResponseEntity.ok(ApiResponse.success(profile));
+    }
+
+    @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Update employee's own profile (photo, phone, address)")
+    public ResponseEntity<ApiResponse<Employee>> updateMyProfile(
+            @CurrentUser UserPrincipal currentUser,
+            @RequestBody com.priyex.hrms.employee.dto.UpdateSelfProfileRequest request
+    ) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        Long userId = currentUser != null ? currentUser.getId() : null;
+        Long employeeId = currentUser != null ? currentUser.getEmployeeId() : null;
+
+        Employee updated = employeeService.updateMyProfile(companyId, userId, employeeId, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Profile updated successfully"));
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('emp.view_all') or hasRole('SUPER_ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get employee profile by ID")
     public ResponseEntity<ApiResponse<Employee>> getEmployeeById(
             @CurrentUser UserPrincipal currentUser,
@@ -51,6 +98,25 @@ public class EmployeeController {
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Employee employee = employeeService.getEmployeeById(companyId, id);
+
+        boolean isPrivileged = currentUser != null && (
+                currentUser.hasRole("SUPER_ADMIN") ||
+                currentUser.hasRole("ADMIN") ||
+                currentUser.hasRole("HR_ADMIN")
+        );
+        boolean isSelf = currentUser != null && id.equals(currentUser.getEmployeeId());
+
+        if (!isPrivileged && !isSelf) {
+            employee.setPersonalPhone(null);
+            employee.setPersonalEmail(null);
+            employee.setBankAccountNumber(null);
+            employee.setBankIfsc(null);
+            employee.setAddressLine1(null);
+            employee.setCity(null);
+            employee.setState(null);
+            employee.setPostalCode(null);
+        }
+
         return ResponseEntity.ok(ApiResponse.success(employee));
     }
 

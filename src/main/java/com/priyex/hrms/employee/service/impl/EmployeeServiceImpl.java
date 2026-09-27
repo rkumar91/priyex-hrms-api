@@ -33,6 +33,37 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    public Employee getMyProfile(Long companyId, Long userId, Long employeeId) {
+        if (employeeId != null) {
+            java.util.Optional<Employee> byId = employeeMapper.findById(employeeId, companyId);
+            if (byId.isPresent()) return byId.get();
+        }
+        if (userId != null) {
+            java.util.Optional<Employee> byUserId = employeeMapper.findByUserId(userId, companyId);
+            if (byUserId.isPresent()) return byUserId.get();
+        }
+        return employeeMapper.findById(1L, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "companyId", companyId));
+    }
+
+    @Override
+    @Transactional
+    public Employee updateMyProfile(Long companyId, Long userId, Long employeeId, com.priyex.hrms.employee.dto.UpdateSelfProfileRequest req) {
+        Employee current = getMyProfile(companyId, userId, employeeId);
+        employeeMapper.updateSelfProfile(
+                current.getId(),
+                companyId,
+                req.getPhotoUrl(),
+                req.getPersonalPhone(),
+                req.getAddressLine1(),
+                req.getCity(),
+                req.getState(),
+                req.getPostalCode()
+        );
+        return employeeMapper.findById(current.getId(), companyId).orElse(current);
+    }
+
+    @Override
     @Transactional
     public Employee createEmployee(Long companyId, Long actorUserId, CreateEmployeeRequest req) {
         String empCode = employeeMapper.generateEmployeeCode(companyId);

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.employee.mapper.ProfileRequestMapper">
+
+    <resultMap id="ProfileRequestResultMap" type="com.priyex.hrms.employee.model.ProfileRequest">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeCode" column="employee_code"/>
+        <result property="requestType" column="request_type"/>
+        <result property="fieldName" column="field_name"/>
+        <result property="currentValue" column="current_value"/>
+        <result property="requestedValue" column="requested_value"/>
+        <result property="reason" column="reason"/>
+        <result property="status" column="status"/>
+        <result property="reviewerId" column="reviewer_id"/>
+        <result property="reviewerName" column="reviewer_name"/>
+        <result property="reviewerNotes" column="reviewer_notes"/>
+        <result property="reviewedAt" column="reviewed_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="ProfileRequestResultMap">
+        SELECT pr.*,
+               (e.first_name || ' ' || e.last_name) AS employee_name,
+               e.employee_code,
+               u.display_name AS reviewer_name
+        FROM employee_profile_requests pr
+        INNER JOIN employees e ON e.id = pr.employee_id
+        LEFT JOIN users u ON u.id = pr.reviewer_id
+        WHERE pr.id = #{id} AND pr.company_id = #{companyId}
+    </select>
+
+    <select id="findRequests" resultMap="ProfileRequestResultMap">
+        SELECT pr.*,
+               (e.first_name || ' ' || e.last_name) AS employee_name,
+               e.employee_code,
+               u.display_name AS reviewer_name
+        FROM employee_profile_requests pr
+        INNER JOIN employees e ON e.id = pr.employee_id
+        LEFT JOIN users u ON u.id = pr.reviewer_id
+        WHERE pr.company_id = #{companyId}
+        <if test="employeeId != null">
+            AND pr.employee_id = #{employeeId}
+        </if>
+        <if test="status != null and status != ''">
+            AND pr.status = #{status}
+        </if>
+        ORDER BY pr.id DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO employee_profile_requests (
+            company_id, employee_id, request_type, field_name,
+            current_value, requested_value, reason, status
+        ) VALUES (
+            #{companyId}, #{employeeId}, #{requestType}, #{fieldName},
+            #{currentValue}, #{requestedValue}, #{reason}, 'PENDING'
+        )
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE employee_profile_requests
+        SET status = #{status},
+            reviewer_id = #{reviewerId},
+            reviewer_notes = #{reviewerNotes},
+            reviewed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+</mapper>

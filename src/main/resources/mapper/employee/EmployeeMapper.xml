@@ -35,6 +35,14 @@
         <result property="probationEndDate" column="probation_end_date"/>
         <result property="noticePeriodDays" column="notice_period_days"/>
         <result property="status" column="status"/>
+        <result property="addressLine1" column="address_line1"/>
+        <result property="city" column="city"/>
+        <result property="state" column="state"/>
+        <result property="postalCode" column="postal_code"/>
+        <result property="bankAccountNumber" column="bank_account_number"/>
+        <result property="bankIfsc" column="bank_ifsc"/>
+        <result property="pfNumber" column="pf_number"/>
+        <result property="uanNumber" column="uan_number"/>
         <result property="departmentName" column="department_name"/>
         <result property="designationName" column="designation_name"/>
         <result property="branchName" column="branch_name"/>
@@ -49,6 +57,16 @@
         LEFT JOIN designations des ON des.id = e.designation_id
         LEFT JOIN branches b ON b.id = e.branch_id
         WHERE e.id = #{id} AND e.company_id = #{companyId}
+    </select>
+
+    <select id="findByUserId" resultMap="EmployeeResultMap">
+        SELECT e.*, d.name AS department_name, des.name AS designation_name, b.name AS branch_name
+        FROM employees e
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN designations des ON des.id = e.designation_id
+        LEFT JOIN branches b ON b.id = e.branch_id
+        WHERE e.user_id = #{userId} AND e.company_id = #{companyId}
+        LIMIT 1
     </select>
 
     <select id="searchEmployees" resultMap="EmployeeResultMap">
@@ -120,6 +138,31 @@
         WHERE id = #{id} AND company_id = #{companyId}
     </update>
 
+    <update id="updateSelfProfile">
+        UPDATE employees
+        SET photo_url = COALESCE(#{photoUrl}, photo_url),
+            personal_phone = COALESCE(#{personalPhone}, personal_phone),
+            address_line1 = COALESCE(#{addressLine1}, address_line1),
+            city = COALESCE(#{city}, city),
+            state = COALESCE(#{state}, state),
+            postal_code = COALESCE(#{postalCode}, postal_code),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <update id="updateDirectField">
+        UPDATE employees
+        <set>
+            <if test="columnName == 'bank_account_number'">bank_account_number = #{value},</if>
+            <if test="columnName == 'first_name'">first_name = #{value},</if>
+            <if test="columnName == 'last_name'">last_name = #{value},</if>
+            <if test="columnName == 'work_email'">work_email = #{value},</if>
+            <if test="columnName == 'personal_email'">personal_email = #{value},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
     <update id="softDelete">
         UPDATE employees
         SET status = 'EXITED', updated_at = NOW()
@@ -130,5 +173,29 @@
         SELECT 'EMP-' || LPAD(CAST(COALESCE(MAX(id), 0) + 1001 AS TEXT), 4, '0')
         FROM employees
     </select>
+
+    <select id="findEmployeeUserRoles" resultType="com.priyex.hrms.auth.dto.EmployeeUserRoleDto">
+        SELECT e.id AS employeeId,
+               e.employee_code AS employeeCode,
+               e.first_name AS firstName,
+               e.last_name AS lastName,
+               d.name AS departmentName,
+               des.name AS designationName,
+               e.work_email AS workEmail,
+               u.id AS userId,
+               u.email AS userEmail,
+               COALESCE(u.is_active, FALSE) AS userActive
+        FROM employees e
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN designations des ON des.id = e.designation_id
+        LEFT JOIN users u ON u.id = e.user_id OR u.employee_id = e.id OR u.email = e.work_email
+        WHERE e.company_id = #{companyId}
+        ORDER BY e.id ASC
+    </select>
+
+    <update id="linkUserId">
+        UPDATE employees SET user_id = #{userId}, updated_at = NOW()
+        WHERE id = #{employeeId} AND company_id = #{companyId}
+    </update>
 
 </mapper>

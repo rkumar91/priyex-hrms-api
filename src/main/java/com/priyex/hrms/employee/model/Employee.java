@@ -51,6 +51,16 @@ public class Employee {
 
     private String status; // ACTIVE, PROBATION, ON_LEAVE, EXITED
 
+    // Address, Financial & Statutory
+    private String addressLine1;
+    private String city;
+    private String state;
+    private String postalCode;
+    private String bankAccountNumber;
+    private String bankIfsc;
+    private String pfNumber;
+    private String uanNumber;
+
     // Joined names for convenience
     private String departmentName;
     private String designationName;

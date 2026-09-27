@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.employee.mapper.HrQueryMapper">
+
+    <resultMap id="HrQueryResultMap" type="com.priyex.hrms.employee.model.HrQuery">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeCode" column="employee_code"/>
+        <result property="assignedHrId" column="assigned_hr_id"/>
+        <result property="assignedHrName" column="assigned_hr_name"/>
+        <result property="assignedHrEmail" column="assigned_hr_email"/>
+        <result property="category" column="category"/>
+        <result property="subject" column="subject"/>
+        <result property="message" column="message"/>
+        <result property="priority" column="priority"/>
+        <result property="status" column="status"/>
+        <result property="hrResponse" column="hr_response"/>
+        <result property="respondedAt" column="responded_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="HrQueryResultMap">
+        SELECT q.*,
+               (e.first_name || ' ' || e.last_name) AS employee_name,
+               e.employee_code,
+               u.display_name AS assigned_hr_name,
+               u.email AS assigned_hr_email
+        FROM hr_queries q
+        INNER JOIN employees e ON e.id = q.employee_id
+        LEFT JOIN users u ON u.id = q.assigned_hr_id
+        WHERE q.id = #{id} AND q.company_id = #{companyId}
+    </select>
+
+    <select id="findQueries" resultMap="HrQueryResultMap">
+        SELECT q.*,
+               (e.first_name || ' ' || e.last_name) AS employee_name,
+               e.employee_code,
+               u.display_name AS assigned_hr_name,
+               u.email AS assigned_hr_email
+        FROM hr_queries q
+        INNER JOIN employees e ON e.id = q.employee_id
+        LEFT JOIN users u ON u.id = q.assigned_hr_id
+        WHERE q.company_id = #{companyId}
+        <if test="employeeId != null">
+            AND q.employee_id = #{employeeId}
+        </if>
+        <if test="assignedHrId != null">
+            AND q.assigned_hr_id = #{assignedHrId}
+        </if>
+        <if test="status != null and status != ''">
+            AND q.status = #{status}
+        </if>
+        ORDER BY q.id DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO hr_queries (
+            company_id, employee_id, assigned_hr_id, category,
+            subject, message, priority, status
+        ) VALUES (
+            #{companyId}, #{employeeId}, #{assignedHrId}, #{category},
+            #{subject}, #{message}, #{priority}, 'OPEN'
+        )
+    </insert>
+
+    <update id="respondToQuery">
+        UPDATE hr_queries
+        SET hr_response = #{response},
+            status = COALESCE(#{status}, 'RESOLVED'),
+            responded_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <select id="findHrPersonnelList" resultType="com.priyex.hrms.employee.dto.HrPersonnelDto">
+        SELECT DISTINCT u.id, u.display_name AS displayName, u.email, u.avatar_url AS avatarUrl, r.name AS role
+        FROM users u
+        INNER JOIN user_roles ur ON ur.user_id = u.id
+        INNER JOIN roles r ON r.id = ur.role_id
+        WHERE (r.name IN ('HR_ADMIN', 'HR_EXECUTIVE', 'SUPER_ADMIN'))
+          AND u.is_active = TRUE
+        ORDER BY u.id ASC
+    </select>
+
+</mapper>

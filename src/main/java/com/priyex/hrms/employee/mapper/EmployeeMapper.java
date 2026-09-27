@@ -12,6 +12,8 @@ public interface EmployeeMapper {
 
     Optional<Employee> findById(@Param("id") Long id, @Param("companyId") Long companyId);
 
+    Optional<Employee> findByUserId(@Param("userId") Long userId, @Param("companyId") Long companyId);
+
     List<Employee> searchEmployees(
             @Param("companyId") Long companyId,
             @Param("query") String query,
@@ -32,7 +34,29 @@ public interface EmployeeMapper {
 
     int update(Employee employee);
 
+    int updateSelfProfile(
+            @Param("id") Long id,
+            @Param("companyId") Long companyId,
+            @Param("photoUrl") String photoUrl,
+            @Param("personalPhone") String personalPhone,
+            @Param("addressLine1") String addressLine1,
+            @Param("city") String city,
+            @Param("state") String state,
+            @Param("postalCode") String postalCode
+    );
+
+    int updateDirectField(
+            @Param("id") Long id,
+            @Param("companyId") Long companyId,
+            @Param("columnName") String columnName,
+            @Param("value") String value
+    );
+
     int softDelete(@Param("id") Long id, @Param("companyId") Long companyId);
 
     String generateEmployeeCode(@Param("companyId") Long companyId);
+
+    List<com.priyex.hrms.auth.dto.EmployeeUserRoleDto> findEmployeeUserRoles(@Param("companyId") Long companyId);
+
+    int linkUserId(@Param("employeeId") Long employeeId, @Param("userId") Long userId, @Param("companyId") Long companyId);
 }

@@ -103,8 +103,26 @@
                locked_until, last_login_at, password_changed_at, must_change_password,
                created_at, created_by, updated_at, updated_by, version
         FROM users
-        ORDER BY created_at DESC
+        ORDER BY id ASC
         LIMIT #{limit} OFFSET #{offset}
     </select>
+
+    <delete id="deleteUserRoles">
+        DELETE FROM user_roles WHERE user_id = #{userId}
+    </delete>
+
+    <insert id="insertUserRole">
+        INSERT INTO user_roles (user_id, role_id, assigned_by)
+        VALUES (#{userId}, #{roleId}, #{assignedBy})
+        ON CONFLICT (user_id, role_id) DO NOTHING
+    </insert>
+
+    <select id="findRoleIdByName" resultType="java.lang.Long">
+        SELECT id FROM roles WHERE name = #{name} AND is_active = TRUE LIMIT 1
+    </select>
+
+    <update id="updateUserStatus">
+        UPDATE users SET is_active = #{active}, updated_at = NOW() WHERE id = #{id}
+    </update>
 
 </mapper>

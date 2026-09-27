@@ -35,4 +35,12 @@ public interface UserMapper {
     int countAll();
 
     List<User> findAll(@Param("offset") int offset, @Param("limit") int limit);
+
+    void deleteUserRoles(@Param("userId") Long userId);
+
+    void insertUserRole(@Param("userId") Long userId, @Param("roleId") Long roleId, @Param("assignedBy") Long assignedBy);
+
+    Long findRoleIdByName(@Param("name") String name);
+
+    void updateUserStatus(@Param("id") Long id, @Param("active") boolean active);
 }

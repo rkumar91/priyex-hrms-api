@@ -10,6 +10,10 @@ public interface EmployeeService {
 
     Employee getEmployeeById(Long companyId, Long id);
 
+    Employee getMyProfile(Long companyId, Long userId, Long employeeId);
+
+    Employee updateMyProfile(Long companyId, Long userId, Long employeeId, com.priyex.hrms.employee.dto.UpdateSelfProfileRequest request);
+
     Employee createEmployee(Long companyId, Long actorUserId, CreateEmployeeRequest request);
 
     Employee updateEmployee(Long companyId, Long id, CreateEmployeeRequest request);
