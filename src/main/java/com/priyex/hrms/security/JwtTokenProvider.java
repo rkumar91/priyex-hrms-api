@@ -2,7 +2,6 @@ package com.priyex.hrms.security;
 
 import com.priyex.hrms.config.AppProperties;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
-import java.util.Map;
 import java.util.Set;
 
 /**

@@ -5,7 +5,6 @@ import com.priyex.hrms.auth.dto.LoginRequest;
 import com.priyex.hrms.auth.dto.LoginResponse;
 import com.priyex.hrms.auth.service.AuthService;
 import com.priyex.hrms.common.response.ApiResponse;
-import com.priyex.hrms.security.CurrentUser;
 import com.priyex.hrms.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
