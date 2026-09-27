@@ -37,12 +37,7 @@ public interface EmployeeMapper {
     int updateSelfProfile(
             @Param("id") Long id,
             @Param("companyId") Long companyId,
-            @Param("photoUrl") String photoUrl,
-            @Param("personalPhone") String personalPhone,
-            @Param("addressLine1") String addressLine1,
-            @Param("city") String city,
-            @Param("state") String state,
-            @Param("postalCode") String postalCode
+            @Param("req") com.priyex.hrms.employee.dto.UpdateSelfProfileRequest req
     );
 
     int updateDirectField(

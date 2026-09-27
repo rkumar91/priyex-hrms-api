@@ -3,7 +3,9 @@ package com.priyex.hrms.employee.controller;
 import com.priyex.hrms.common.response.ApiResponse;
 import com.priyex.hrms.common.response.PagedResponse;
 import com.priyex.hrms.employee.dto.CreateEmployeeRequest;
+import com.priyex.hrms.employee.dto.UploadDocumentRequest;
 import com.priyex.hrms.employee.model.Employee;
+import com.priyex.hrms.employee.model.EmployeeDocument;
 import com.priyex.hrms.employee.service.EmployeeService;
 import com.priyex.hrms.security.CurrentUser;
 import com.priyex.hrms.security.UserPrincipal;
@@ -17,6 +19,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/employees")
@@ -48,14 +52,7 @@ public class EmployeeController {
 
         if (!isPrivileged && result.getContent() != null) {
             for (Employee emp : result.getContent()) {
-                emp.setPersonalPhone(null);
-                emp.setPersonalEmail(null);
-                emp.setBankAccountNumber(null);
-                emp.setBankIfsc(null);
-                emp.setAddressLine1(null);
-                emp.setCity(null);
-                emp.setState(null);
-                emp.setPostalCode(null);
+                maskSensitiveData(emp);
             }
         }
 
@@ -107,14 +104,7 @@ public class EmployeeController {
         boolean isSelf = currentUser != null && id.equals(currentUser.getEmployeeId());
 
         if (!isPrivileged && !isSelf) {
-            employee.setPersonalPhone(null);
-            employee.setPersonalEmail(null);
-            employee.setBankAccountNumber(null);
-            employee.setBankIfsc(null);
-            employee.setAddressLine1(null);
-            employee.setCity(null);
-            employee.setState(null);
-            employee.setPostalCode(null);
+            maskSensitiveData(employee);
         }
 
         return ResponseEntity.ok(ApiResponse.success(employee));
@@ -171,5 +161,109 @@ public class EmployeeController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=employees_export.csv")
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(bytes);
+    }
+
+    // ── Employee Documents Endpoints ──
+
+    @GetMapping("/me/documents")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get current logged-in employee ID documents")
+    public ResponseEntity<ApiResponse<List<EmployeeDocument>>> getMyDocuments(@CurrentUser UserPrincipal currentUser) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        Long userId = currentUser != null ? currentUser.getId() : null;
+        Long employeeId = currentUser != null ? currentUser.getEmployeeId() : null;
+        Employee me = employeeService.getMyProfile(companyId, userId, employeeId);
+        List<EmployeeDocument> docs = employeeService.getDocuments(me.getId());
+        return ResponseEntity.ok(ApiResponse.success(docs));
+    }
+
+    @PostMapping("/me/documents")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Upload ID document for current logged-in employee")
+    public ResponseEntity<ApiResponse<EmployeeDocument>> uploadMyDocument(
+            @CurrentUser UserPrincipal currentUser,
+            @Valid @RequestBody UploadDocumentRequest request
+    ) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        Long userId = currentUser != null ? currentUser.getId() : null;
+        Long employeeId = currentUser != null ? currentUser.getEmployeeId() : null;
+        Employee me = employeeService.getMyProfile(companyId, userId, employeeId);
+        EmployeeDocument doc = employeeService.uploadDocument(me.getId(), userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(doc, "Document uploaded successfully"));
+    }
+
+    @DeleteMapping("/me/documents/{docId}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Delete an uploaded document for current employee")
+    public ResponseEntity<ApiResponse<Void>> deleteMyDocument(
+            @CurrentUser UserPrincipal currentUser,
+            @PathVariable Long docId
+    ) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        Long userId = currentUser != null ? currentUser.getId() : null;
+        Long employeeId = currentUser != null ? currentUser.getEmployeeId() : null;
+        Employee me = employeeService.getMyProfile(companyId, userId, employeeId);
+        employeeService.deleteDocument(me.getId(), docId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Document deleted successfully"));
+    }
+
+    @GetMapping("/{id}/documents")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get employee ID documents (by HR/Admin or self)")
+    public ResponseEntity<ApiResponse<List<EmployeeDocument>>> getEmployeeDocuments(
+            @CurrentUser UserPrincipal currentUser,
+            @PathVariable Long id
+    ) {
+        List<EmployeeDocument> docs = employeeService.getDocuments(id);
+        return ResponseEntity.ok(ApiResponse.success(docs));
+    }
+
+    @PostMapping("/{id}/documents")
+    @PreAuthorize("hasAuthority('emp.manage_documents') or hasRole('SUPER_ADMIN') or hasRole('HR_ADMIN')")
+    @Operation(summary = "Upload ID document for an employee (HR/Admin)")
+    public ResponseEntity<ApiResponse<EmployeeDocument>> uploadEmployeeDocument(
+            @CurrentUser UserPrincipal currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody UploadDocumentRequest request
+    ) {
+        Long actorId = currentUser != null ? currentUser.getId() : 1L;
+        EmployeeDocument doc = employeeService.uploadDocument(id, actorId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(doc, "Document uploaded successfully"));
+    }
+
+    @DeleteMapping("/{id}/documents/{docId}")
+    @PreAuthorize("hasAuthority('emp.manage_documents') or hasRole('SUPER_ADMIN') or hasRole('HR_ADMIN')")
+    @Operation(summary = "Delete employee ID document")
+    public ResponseEntity<ApiResponse<Void>> deleteEmployeeDocument(
+            @CurrentUser UserPrincipal currentUser,
+            @PathVariable Long id,
+            @PathVariable Long docId
+    ) {
+        employeeService.deleteDocument(id, docId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Document deleted successfully"));
+    }
+
+    private void maskSensitiveData(Employee emp) {
+        emp.setPersonalPhone(null);
+        emp.setPersonalEmail(null);
+        emp.setBankAccountNumber(null);
+        emp.setBankIfsc(null);
+        emp.setBankName(null);
+        emp.setBankBranch(null);
+        emp.setPanNumber(null);
+        emp.setAadhaarNumber(null);
+        emp.setEsiNumber(null);
+        emp.setPfNomineeName(null);
+        emp.setPfNomineeRelationship(null);
+        emp.setAddressLine1(null);
+        emp.setAddressLine2(null);
+        emp.setPermanentAddressLine1(null);
+        emp.setPermanentAddressLine2(null);
+        emp.setPermanentCity(null);
+        emp.setPermanentState(null);
+        emp.setPermanentPostalCode(null);
+        emp.setEmergencyContactName(null);
+        emp.setEmergencyContactRelationship(null);
+        emp.setEmergencyContactPhone(null);
     }
 }

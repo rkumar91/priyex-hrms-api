@@ -36,13 +36,34 @@
         <result property="noticePeriodDays" column="notice_period_days"/>
         <result property="status" column="status"/>
         <result property="addressLine1" column="address_line1"/>
+        <result property="addressLine2" column="address_line2"/>
         <result property="city" column="city"/>
         <result property="state" column="state"/>
         <result property="postalCode" column="postal_code"/>
+        <result property="country" column="country"/>
+        <result property="permanentAddressLine1" column="permanent_address_line1"/>
+        <result property="permanentAddressLine2" column="permanent_address_line2"/>
+        <result property="permanentCity" column="permanent_city"/>
+        <result property="permanentState" column="permanent_state"/>
+        <result property="permanentPostalCode" column="permanent_postal_code"/>
+        <result property="permanentCountry" column="permanent_country"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="bankBranch" column="bank_branch"/>
         <result property="bankAccountNumber" column="bank_account_number"/>
         <result property="bankIfsc" column="bank_ifsc"/>
+        <result property="bankAccountType" column="bank_account_type"/>
         <result property="pfNumber" column="pf_number"/>
         <result property="uanNumber" column="uan_number"/>
+        <result property="esiNumber" column="esi_number"/>
+        <result property="panNumber" column="pan_number"/>
+        <result property="aadhaarNumber" column="aadhaar_number"/>
+        <result property="pfNomineeName" column="pf_nominee_name"/>
+        <result property="pfNomineeRelationship" column="pf_nominee_relationship"/>
+        <result property="pfJoiningDate" column="pf_joining_date"/>
+        <result property="emergencyContactName" column="emergency_contact_name"/>
+        <result property="emergencyContactRelationship" column="emergency_contact_relationship"/>
+        <result property="emergencyContactPhone" column="emergency_contact_phone"/>
+        <result property="workLocation" column="work_location"/>
         <result property="departmentName" column="department_name"/>
         <result property="designationName" column="designation_name"/>
         <result property="branchName" column="branch_name"/>
@@ -116,11 +137,23 @@
         INSERT INTO employees (
             company_id, employee_code, first_name, middle_name, last_name,
             work_email, personal_phone, work_phone, department_id, designation_id,
-            branch_id, employment_type, joining_date, status, created_by, updated_by
+            branch_id, employment_type, joining_date, status, created_by, updated_by,
+            address_line1, address_line2, city, state, postal_code, country,
+            permanent_address_line1, permanent_address_line2, permanent_city, permanent_state, permanent_postal_code, permanent_country,
+            bank_name, bank_branch, bank_account_number, bank_ifsc, bank_account_type,
+            pf_number, uan_number, esi_number, pan_number, aadhaar_number, pf_nominee_name, pf_nominee_relationship,
+            emergency_contact_name, emergency_contact_relationship, emergency_contact_phone,
+            date_of_birth, gender, blood_group, marital_status, work_location
         ) VALUES (
             #{companyId}, #{employeeCode}, #{firstName}, #{middleName}, #{lastName},
             #{workEmail}, #{personalPhone}, #{workPhone}, #{departmentId}, #{designationId},
-            #{branchId}, #{employmentType}, #{joiningDate}, #{status}, #{createdBy}, #{updatedBy}
+            #{branchId}, #{employmentType}, #{joiningDate}, #{status}, #{createdBy}, #{updatedBy},
+            #{addressLine1}, #{addressLine2}, #{city}, #{state}, #{postalCode}, #{country},
+            #{permanentAddressLine1}, #{permanentAddressLine2}, #{permanentCity}, #{permanentState}, #{permanentPostalCode}, #{permanentCountry},
+            #{bankName}, #{bankBranch}, #{bankAccountNumber}, #{bankIfsc}, #{bankAccountType},
+            #{pfNumber}, #{uanNumber}, #{esiNumber}, #{panNumber}, #{aadhaarNumber}, #{pfNomineeName}, #{pfNomineeRelationship},
+            #{emergencyContactName}, #{emergencyContactRelationship}, #{emergencyContactPhone},
+            #{dateOfBirth}, #{gender}, #{bloodGroup}, #{maritalStatus}, #{workLocation}
         )
     </insert>
 
@@ -134,18 +167,65 @@
             designation_id = #{designationId},
             employment_type = #{employmentType},
             status = #{status},
+            address_line1 = #{addressLine1},
+            address_line2 = #{addressLine2},
+            city = #{city},
+            state = #{state},
+            postal_code = #{postalCode},
+            country = #{country},
+            permanent_address_line1 = #{permanentAddressLine1},
+            permanent_address_line2 = #{permanentAddressLine2},
+            permanent_city = #{permanentCity},
+            permanent_state = #{permanentState},
+            permanent_postal_code = #{permanentPostalCode},
+            permanent_country = #{permanentCountry},
+            bank_name = #{bankName},
+            bank_branch = #{bankBranch},
+            bank_account_number = #{bankAccountNumber},
+            bank_ifsc = #{bankIfsc},
+            bank_account_type = #{bankAccountType},
+            pf_number = #{pfNumber},
+            uan_number = #{uanNumber},
+            esi_number = #{esiNumber},
+            pan_number = #{panNumber},
+            aadhaar_number = #{aadhaarNumber},
+            pf_nominee_name = #{pfNomineeName},
+            pf_nominee_relationship = #{pfNomineeRelationship},
+            emergency_contact_name = #{emergencyContactName},
+            emergency_contact_relationship = #{emergencyContactRelationship},
+            emergency_contact_phone = #{emergencyContactPhone},
+            date_of_birth = #{dateOfBirth},
+            gender = #{gender},
+            blood_group = #{bloodGroup},
+            marital_status = #{maritalStatus},
+            work_location = #{workLocation},
             updated_at = NOW()
         WHERE id = #{id} AND company_id = #{companyId}
     </update>
 
     <update id="updateSelfProfile">
         UPDATE employees
-        SET photo_url = COALESCE(#{photoUrl}, photo_url),
-            personal_phone = COALESCE(#{personalPhone}, personal_phone),
-            address_line1 = COALESCE(#{addressLine1}, address_line1),
-            city = COALESCE(#{city}, city),
-            state = COALESCE(#{state}, state),
-            postal_code = COALESCE(#{postalCode}, postal_code),
+        SET photo_url = COALESCE(#{req.photoUrl}, photo_url),
+            personal_phone = COALESCE(#{req.personalPhone}, personal_phone),
+            personal_email = COALESCE(#{req.personalEmail}, personal_email),
+            blood_group = COALESCE(#{req.bloodGroup}, blood_group),
+            marital_status = COALESCE(#{req.maritalStatus}, marital_status),
+            date_of_birth = COALESCE(#{req.dateOfBirth}, date_of_birth),
+            address_line1 = COALESCE(#{req.addressLine1}, address_line1),
+            address_line2 = COALESCE(#{req.addressLine2}, address_line2),
+            city = COALESCE(#{req.city}, city),
+            state = COALESCE(#{req.state}, state),
+            postal_code = COALESCE(#{req.postalCode}, postal_code),
+            country = COALESCE(#{req.country}, country),
+            permanent_address_line1 = COALESCE(#{req.permanentAddressLine1}, permanent_address_line1),
+            permanent_address_line2 = COALESCE(#{req.permanentAddressLine2}, permanent_address_line2),
+            permanent_city = COALESCE(#{req.permanentCity}, permanent_city),
+            permanent_state = COALESCE(#{req.permanentState}, permanent_state),
+            permanent_postal_code = COALESCE(#{req.permanentPostalCode}, permanent_postal_code),
+            permanent_country = COALESCE(#{req.permanentCountry}, permanent_country),
+            emergency_contact_name = COALESCE(#{req.emergencyContactName}, emergency_contact_name),
+            emergency_contact_relationship = COALESCE(#{req.emergencyContactRelationship}, emergency_contact_relationship),
+            emergency_contact_phone = COALESCE(#{req.emergencyContactPhone}, emergency_contact_phone),
             updated_at = NOW()
         WHERE id = #{id} AND company_id = #{companyId}
     </update>

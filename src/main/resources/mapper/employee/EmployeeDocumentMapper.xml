@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.employee.mapper.EmployeeDocumentMapper">
+
+    <resultMap id="EmployeeDocumentResultMap" type="com.priyex.hrms.employee.model.EmployeeDocument">
+        <id property="id" column="id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="documentType" column="document_type"/>
+        <result property="documentName" column="document_name"/>
+        <result property="fileKey" column="file_key"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="mimeType" column="mime_type"/>
+        <result property="fileData" column="file_data"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="verified" column="is_verified"/>
+        <result property="verifiedBy" column="verified_by"/>
+        <result property="verifiedAt" column="verified_at"/>
+        <result property="remarks" column="remarks"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByEmployeeId" resultMap="EmployeeDocumentResultMap">
+        SELECT *
+        FROM employee_documents
+        WHERE employee_id = #{employeeId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findById" resultMap="EmployeeDocumentResultMap">
+        SELECT *
+        FROM employee_documents
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO employee_documents (
+            employee_id, document_type, document_name, file_key,
+            file_size, mime_type, file_data, is_verified, created_by, created_at, updated_at
+        ) VALUES (
+            #{employeeId}, #{documentType}, #{documentName}, #{fileKey},
+            #{fileSize}, #{mimeType}, #{fileData}, #{verified}, #{createdBy}, NOW(), NOW()
+        )
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM employee_documents
+        WHERE id = #{id} AND employee_id = #{employeeId}
+    </delete>
+
+</mapper>

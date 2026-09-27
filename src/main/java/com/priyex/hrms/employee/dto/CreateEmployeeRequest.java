@@ -35,4 +35,48 @@ public class CreateEmployeeRequest {
     private LocalDate joiningDate;
 
     private String status = "ACTIVE";
+
+    // Personal & Corporate
+    private LocalDate dateOfBirth;
+    private String gender;
+    private String bloodGroup;
+    private String maritalStatus;
+    private String workLocation;
+
+    // Address
+    private String addressLine1;
+    private String addressLine2;
+    private String city;
+    private String state;
+    private String postalCode;
+    private String country;
+
+    // Permanent Address
+    private String permanentAddressLine1;
+    private String permanentAddressLine2;
+    private String permanentCity;
+    private String permanentState;
+    private String permanentPostalCode;
+    private String permanentCountry;
+
+    // Banking
+    private String bankName;
+    private String bankBranch;
+    private String bankAccountNumber;
+    private String bankIfsc;
+    private String bankAccountType;
+
+    // Statutory & PF
+    private String panNumber;
+    private String aadhaarNumber;
+    private String pfNumber;
+    private String uanNumber;
+    private String esiNumber;
+    private String pfNomineeName;
+    private String pfNomineeRelationship;
+
+    // Emergency Contact
+    private String emergencyContactName;
+    private String emergencyContactRelationship;
+    private String emergencyContactPhone;
 }

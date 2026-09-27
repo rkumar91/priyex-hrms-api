@@ -51,15 +51,46 @@ public class Employee {
 
     private String status; // ACTIVE, PROBATION, ON_LEAVE, EXITED
 
-    // Address, Financial & Statutory
+    // Complete Address Details
     private String addressLine1;
+    private String addressLine2;
     private String city;
     private String state;
     private String postalCode;
+    private String country;
+
+    // Permanent Address
+    private String permanentAddressLine1;
+    private String permanentAddressLine2;
+    private String permanentCity;
+    private String permanentState;
+    private String permanentPostalCode;
+    private String permanentCountry;
+
+    // Financial & Banking
+    private String bankName;
+    private String bankBranch;
     private String bankAccountNumber;
     private String bankIfsc;
+    private String bankAccountType;
+
+    // PF & Statutory
     private String pfNumber;
     private String uanNumber;
+    private String esiNumber;
+    private String panNumber;
+    private String aadhaarNumber;
+    private String pfNomineeName;
+    private String pfNomineeRelationship;
+    private LocalDate pfJoiningDate;
+
+    // Emergency Contact
+    private String emergencyContactName;
+    private String emergencyContactRelationship;
+    private String emergencyContactPhone;
+
+    // Corporate Work Location
+    private String workLocation;
 
     // Joined names for convenience
     private String departmentName;

@@ -21,4 +21,10 @@ public interface EmployeeService {
     void deleteEmployee(Long companyId, Long id);
 
     String exportEmployeesCsv(Long companyId);
+
+    java.util.List<com.priyex.hrms.employee.model.EmployeeDocument> getDocuments(Long employeeId);
+
+    com.priyex.hrms.employee.model.EmployeeDocument uploadDocument(Long employeeId, Long actorUserId, com.priyex.hrms.employee.dto.UploadDocumentRequest req);
+
+    void deleteDocument(Long employeeId, Long documentId);
 }

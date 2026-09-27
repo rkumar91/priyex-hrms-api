@@ -3,8 +3,10 @@ package com.priyex.hrms.employee.service.impl;
 import com.priyex.hrms.common.exception.ResourceNotFoundException;
 import com.priyex.hrms.common.response.PagedResponse;
 import com.priyex.hrms.employee.dto.CreateEmployeeRequest;
+import com.priyex.hrms.employee.mapper.EmployeeDocumentMapper;
 import com.priyex.hrms.employee.mapper.EmployeeMapper;
 import com.priyex.hrms.employee.model.Employee;
+import com.priyex.hrms.employee.model.EmployeeDocument;
 import com.priyex.hrms.employee.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.util.List;
 public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeMapper employeeMapper;
+    private final EmployeeDocumentMapper employeeDocumentMapper;
 
     @Override
     public PagedResponse<Employee> getEmployees(Long companyId, String query, Long departmentId, String status, int page, int size) {
@@ -50,16 +53,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Transactional
     public Employee updateMyProfile(Long companyId, Long userId, Long employeeId, com.priyex.hrms.employee.dto.UpdateSelfProfileRequest req) {
         Employee current = getMyProfile(companyId, userId, employeeId);
-        employeeMapper.updateSelfProfile(
-                current.getId(),
-                companyId,
-                req.getPhotoUrl(),
-                req.getPersonalPhone(),
-                req.getAddressLine1(),
-                req.getCity(),
-                req.getState(),
-                req.getPostalCode()
-        );
+        employeeMapper.updateSelfProfile(current.getId(), companyId, req);
         return employeeMapper.findById(current.getId(), companyId).orElse(current);
     }
 
@@ -88,6 +82,38 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .status(req.getStatus() != null ? req.getStatus() : "ACTIVE")
                 .createdBy(actorUserId)
                 .updatedBy(actorUserId)
+                .addressLine1(req.getAddressLine1())
+                .addressLine2(req.getAddressLine2())
+                .city(req.getCity())
+                .state(req.getState())
+                .postalCode(req.getPostalCode())
+                .country(req.getCountry() != null ? req.getCountry() : "India")
+                .permanentAddressLine1(req.getPermanentAddressLine1())
+                .permanentAddressLine2(req.getPermanentAddressLine2())
+                .permanentCity(req.getPermanentCity())
+                .permanentState(req.getPermanentState())
+                .permanentPostalCode(req.getPermanentPostalCode())
+                .permanentCountry(req.getPermanentCountry() != null ? req.getPermanentCountry() : "India")
+                .bankName(req.getBankName())
+                .bankBranch(req.getBankBranch())
+                .bankAccountNumber(req.getBankAccountNumber())
+                .bankIfsc(req.getBankIfsc())
+                .bankAccountType(req.getBankAccountType() != null ? req.getBankAccountType() : "SALARY")
+                .pfNumber(req.getPfNumber())
+                .uanNumber(req.getUanNumber())
+                .esiNumber(req.getEsiNumber())
+                .panNumber(req.getPanNumber())
+                .aadhaarNumber(req.getAadhaarNumber())
+                .pfNomineeName(req.getPfNomineeName())
+                .pfNomineeRelationship(req.getPfNomineeRelationship())
+                .emergencyContactName(req.getEmergencyContactName())
+                .emergencyContactRelationship(req.getEmergencyContactRelationship())
+                .emergencyContactPhone(req.getEmergencyContactPhone())
+                .dateOfBirth(req.getDateOfBirth())
+                .gender(req.getGender())
+                .bloodGroup(req.getBloodGroup())
+                .maritalStatus(req.getMaritalStatus())
+                .workLocation(req.getWorkLocation() != null ? req.getWorkLocation() : "Bangalore HQ")
                 .build();
 
         employeeMapper.insert(emp);
@@ -106,6 +132,38 @@ public class EmployeeServiceImpl implements EmployeeService {
         existing.setDesignationId(req.getDesignationId());
         existing.setEmploymentType(req.getEmploymentType());
         existing.setStatus(req.getStatus());
+        existing.setAddressLine1(req.getAddressLine1());
+        existing.setAddressLine2(req.getAddressLine2());
+        existing.setCity(req.getCity());
+        existing.setState(req.getState());
+        existing.setPostalCode(req.getPostalCode());
+        existing.setCountry(req.getCountry());
+        existing.setPermanentAddressLine1(req.getPermanentAddressLine1());
+        existing.setPermanentAddressLine2(req.getPermanentAddressLine2());
+        existing.setPermanentCity(req.getPermanentCity());
+        existing.setPermanentState(req.getPermanentState());
+        existing.setPermanentPostalCode(req.getPermanentPostalCode());
+        existing.setPermanentCountry(req.getPermanentCountry());
+        existing.setBankName(req.getBankName());
+        existing.setBankBranch(req.getBankBranch());
+        existing.setBankAccountNumber(req.getBankAccountNumber());
+        existing.setBankIfsc(req.getBankIfsc());
+        existing.setBankAccountType(req.getBankAccountType());
+        existing.setPfNumber(req.getPfNumber());
+        existing.setUanNumber(req.getUanNumber());
+        existing.setEsiNumber(req.getEsiNumber());
+        existing.setPanNumber(req.getPanNumber());
+        existing.setAadhaarNumber(req.getAadhaarNumber());
+        existing.setPfNomineeName(req.getPfNomineeName());
+        existing.setPfNomineeRelationship(req.getPfNomineeRelationship());
+        existing.setEmergencyContactName(req.getEmergencyContactName());
+        existing.setEmergencyContactRelationship(req.getEmergencyContactRelationship());
+        existing.setEmergencyContactPhone(req.getEmergencyContactPhone());
+        existing.setDateOfBirth(req.getDateOfBirth());
+        existing.setGender(req.getGender());
+        existing.setBloodGroup(req.getBloodGroup());
+        existing.setMaritalStatus(req.getMaritalStatus());
+        existing.setWorkLocation(req.getWorkLocation());
 
         employeeMapper.update(existing);
         return getEmployeeById(companyId, id);
@@ -137,5 +195,33 @@ public class EmployeeServiceImpl implements EmployeeService {
             ));
         }
         return sb.toString();
+    }
+
+    @Override
+    public List<EmployeeDocument> getDocuments(Long employeeId) {
+        return employeeDocumentMapper.findByEmployeeId(employeeId);
+    }
+
+    @Override
+    @Transactional
+    public EmployeeDocument uploadDocument(Long employeeId, Long actorUserId, com.priyex.hrms.employee.dto.UploadDocumentRequest req) {
+        EmployeeDocument doc = EmployeeDocument.builder()
+                .employeeId(employeeId)
+                .documentType(req.getDocumentType())
+                .documentName(req.getDocumentName())
+                .fileData(req.getFileData())
+                .mimeType(req.getMimeType() != null ? req.getMimeType() : "application/pdf")
+                .fileSize(req.getFileSize() != null ? req.getFileSize() : 0L)
+                .verified(false)
+                .createdBy(actorUserId)
+                .build();
+        employeeDocumentMapper.insert(doc);
+        return doc;
+    }
+
+    @Override
+    @Transactional
+    public void deleteDocument(Long employeeId, Long documentId) {
+        employeeDocumentMapper.delete(documentId, employeeId);
     }
 }
