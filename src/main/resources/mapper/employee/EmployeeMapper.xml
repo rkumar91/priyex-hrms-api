@@ -67,6 +67,7 @@
         <result property="departmentName" column="department_name"/>
         <result property="designationName" column="designation_name"/>
         <result property="branchName" column="branch_name"/>
+        <result property="annualCtc" column="annual_ctc"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
@@ -143,7 +144,7 @@
             bank_name, bank_branch, bank_account_number, bank_ifsc, bank_account_type,
             pf_number, uan_number, esi_number, pan_number, aadhaar_number, pf_nominee_name, pf_nominee_relationship,
             emergency_contact_name, emergency_contact_relationship, emergency_contact_phone,
-            date_of_birth, gender, blood_group, marital_status, work_location
+            date_of_birth, gender, blood_group, marital_status, work_location, annual_ctc
         ) VALUES (
             #{companyId}, #{employeeCode}, #{firstName}, #{middleName}, #{lastName},
             #{workEmail}, #{personalPhone}, #{workPhone}, #{departmentId}, #{designationId},
@@ -153,7 +154,7 @@
             #{bankName}, #{bankBranch}, #{bankAccountNumber}, #{bankIfsc}, #{bankAccountType},
             #{pfNumber}, #{uanNumber}, #{esiNumber}, #{panNumber}, #{aadhaarNumber}, #{pfNomineeName}, #{pfNomineeRelationship},
             #{emergencyContactName}, #{emergencyContactRelationship}, #{emergencyContactPhone},
-            #{dateOfBirth}, #{gender}, #{bloodGroup}, #{maritalStatus}, #{workLocation}
+            #{dateOfBirth}, #{gender}, #{bloodGroup}, #{maritalStatus}, #{workLocation}, COALESCE(#{annualCtc}, 1200000.00)
         )
     </insert>
 
@@ -199,6 +200,14 @@
             blood_group = #{bloodGroup},
             marital_status = #{maritalStatus},
             work_location = #{workLocation},
+            annual_ctc = COALESCE(#{annualCtc}, annual_ctc),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <update id="updateEmployeeCtc">
+        UPDATE employees
+        SET annual_ctc = #{annualCtc},
             updated_at = NOW()
         WHERE id = #{id} AND company_id = #{companyId}
     </update>

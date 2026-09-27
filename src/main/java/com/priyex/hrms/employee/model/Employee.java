@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Instant;
 
@@ -18,6 +19,7 @@ public class Employee {
     private Long companyId;
     private String employeeCode;
     private Long userId;
+    private BigDecimal annualCtc;
 
     private String firstName;
     private String middleName;

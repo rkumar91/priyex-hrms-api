@@ -119,6 +119,28 @@ public class PayrollController {
         return ResponseEntity.ok(ApiResponse.success(payslip));
     }
 
+    @GetMapping("/employees-ctc")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ADMIN') or hasRole('HR_ADMIN')")
+    @Operation(summary = "Get all employees CTC structures (HR / Admin only)")
+    public ResponseEntity<ApiResponse<List<CtcBreakdownResponse>>> getAllEmployeesCtc(@CurrentUser UserPrincipal currentUser) {
+        Long companyId = resolveCompanyId(currentUser);
+        List<CtcBreakdownResponse> list = payrollService.getAllEmployeesCtc(companyId);
+        return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    @PutMapping("/employees/{employeeId}/ctc")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ADMIN') or hasRole('HR_ADMIN')")
+    @Operation(summary = "Update employee Annual CTC (HR / Admin only)")
+    public ResponseEntity<ApiResponse<CtcBreakdownResponse>> updateEmployeeCtc(
+            @CurrentUser UserPrincipal currentUser,
+            @PathVariable Long employeeId,
+            @Valid @RequestBody com.priyex.hrms.payroll.dto.UpdateEmployeeCtcRequest request
+    ) {
+        Long companyId = resolveCompanyId(currentUser);
+        CtcBreakdownResponse updated = payrollService.updateEmployeeCtc(companyId, employeeId, request.getAnnualCtc());
+        return ResponseEntity.ok(ApiResponse.success(updated, "Employee CTC updated successfully! Re-run payroll to regenerate payslips."));
+    }
+
     private Long resolveCompanyId(UserPrincipal currentUser) {
         return (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
     }

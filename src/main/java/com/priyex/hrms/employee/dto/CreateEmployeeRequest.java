@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -35,6 +36,8 @@ public class CreateEmployeeRequest {
     private LocalDate joiningDate;
 
     private String status = "ACTIVE";
+
+    private BigDecimal annualCtc;
 
     // Personal & Corporate
     private LocalDate dateOfBirth;

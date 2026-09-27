@@ -222,6 +222,43 @@ public class PayrollServiceImpl implements PayrollService {
                 .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
 
         BigDecimal annualCtc = resolveAnnualCtc(emp);
+        return calculateCtcBreakdown(emp, annualCtc);
+    }
+
+    @Override
+    @Transactional
+    public CtcBreakdownResponse updateEmployeeCtc(Long companyId, Long employeeId, BigDecimal annualCtc) {
+        Employee emp = employeeMapper.findById(employeeId, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
+
+        employeeMapper.updateEmployeeCtc(employeeId, companyId, annualCtc);
+        emp.setAnnualCtc(annualCtc);
+        return calculateCtcBreakdown(emp, annualCtc);
+    }
+
+    @Override
+    public List<CtcBreakdownResponse> getAllEmployeesCtc(Long companyId) {
+        List<Employee> employees = employeeMapper.searchEmployees(companyId, null, null, "ACTIVE", 0, 500);
+        if (employees.isEmpty()) {
+            employees = employeeMapper.searchEmployees(companyId, null, null, null, 0, 500);
+        }
+        return employees.stream()
+                .map(emp -> calculateCtcBreakdown(emp, resolveAnnualCtc(emp)))
+                .toList();
+    }
+
+    @Override
+    public List<EmployeePayslip> getMyPayslips(Long employeeId) {
+        return payrollMapper.findPayslipsByEmployeeId(employeeId);
+    }
+
+    @Override
+    public EmployeePayslip getPayslip(Long payslipId) {
+        return payrollMapper.findPayslipById(payslipId)
+                .orElseThrow(() -> new ResourceNotFoundException("EmployeePayslip", "id", payslipId));
+    }
+
+    private CtcBreakdownResponse calculateCtcBreakdown(Employee emp, BigDecimal annualCtc) {
         BigDecimal monthlyGross = annualCtc.divide(new BigDecimal("12"), 2, RoundingMode.HALF_UP);
         BigDecimal basic = monthlyGross.multiply(new BigDecimal("0.45")).setScale(2, RoundingMode.HALF_UP);
         BigDecimal hra = basic.multiply(new BigDecimal("0.50")).setScale(2, RoundingMode.HALF_UP);
@@ -239,7 +276,7 @@ public class PayrollServiceImpl implements PayrollService {
         return CtcBreakdownResponse.builder()
                 .employeeId(emp.getId())
                 .employeeCode(emp.getEmployeeCode())
-                .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                .employeeName(emp.getFirstName() + " " + (emp.getLastName() != null ? emp.getLastName() : ""))
                 .designationName(emp.getDesignationName())
                 .departmentName(emp.getDepartmentName())
                 .annualCtc(annualCtc)
@@ -262,18 +299,10 @@ public class PayrollServiceImpl implements PayrollService {
                 .build();
     }
 
-    @Override
-    public List<EmployeePayslip> getMyPayslips(Long employeeId) {
-        return payrollMapper.findPayslipsByEmployeeId(employeeId);
-    }
-
-    @Override
-    public EmployeePayslip getPayslip(Long payslipId) {
-        return payrollMapper.findPayslipById(payslipId)
-                .orElseThrow(() -> new ResourceNotFoundException("EmployeePayslip", "id", payslipId));
-    }
-
     private BigDecimal resolveAnnualCtc(Employee emp) {
+        if (emp.getAnnualCtc() != null && emp.getAnnualCtc().compareTo(BigDecimal.ZERO) > 0) {
+            return emp.getAnnualCtc();
+        }
         if ("EMP-1001".equalsIgnoreCase(emp.getEmployeeCode())) {
             return new BigDecimal("2400000.00");
         } else if ("EMP-1002".equalsIgnoreCase(emp.getEmployeeCode())) {

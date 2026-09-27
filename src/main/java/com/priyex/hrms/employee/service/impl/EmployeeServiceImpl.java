@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -114,6 +115,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .bloodGroup(req.getBloodGroup())
                 .maritalStatus(req.getMaritalStatus())
                 .workLocation(req.getWorkLocation() != null ? req.getWorkLocation() : "Bangalore HQ")
+                .annualCtc(req.getAnnualCtc() != null ? req.getAnnualCtc() : new BigDecimal("1200000.00"))
                 .build();
 
         employeeMapper.insert(emp);
@@ -164,6 +166,9 @@ public class EmployeeServiceImpl implements EmployeeService {
         existing.setBloodGroup(req.getBloodGroup());
         existing.setMaritalStatus(req.getMaritalStatus());
         existing.setWorkLocation(req.getWorkLocation());
+        if (req.getAnnualCtc() != null) {
+            existing.setAnnualCtc(req.getAnnualCtc());
+        }
 
         employeeMapper.update(existing);
         return getEmployeeById(companyId, id);

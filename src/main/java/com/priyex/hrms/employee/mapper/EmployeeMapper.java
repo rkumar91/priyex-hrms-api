@@ -53,5 +53,7 @@ public interface EmployeeMapper {
 
     List<com.priyex.hrms.auth.dto.EmployeeUserRoleDto> findEmployeeUserRoles(@Param("companyId") Long companyId);
 
+    int updateEmployeeCtc(@Param("id") Long id, @Param("companyId") Long companyId, @Param("annualCtc") java.math.BigDecimal annualCtc);
+
     int linkUserId(@Param("employeeId") Long employeeId, @Param("userId") Long userId, @Param("companyId") Long companyId);
 }
