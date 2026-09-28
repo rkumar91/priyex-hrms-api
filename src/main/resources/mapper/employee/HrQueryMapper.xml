@@ -57,15 +57,41 @@
         ORDER BY q.id DESC
     </select>
 
+    <select id="findPoolQueries" resultMap="HrQueryResultMap">
+        SELECT q.*,
+               (e.first_name || ' ' || e.last_name) AS employee_name,
+               e.employee_code,
+               NULL AS assigned_hr_name,
+               NULL AS assigned_hr_email
+        FROM hr_queries q
+        INNER JOIN employees e ON e.id = q.employee_id
+        WHERE q.company_id = #{companyId}
+          AND (q.status = 'WAITING_IN_POOL' OR (q.status = 'OPEN' AND q.assigned_hr_id IS NULL))
+        ORDER BY q.id ASC
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO hr_queries (
             company_id, employee_id, assigned_hr_id, category,
             subject, message, priority, status
         ) VALUES (
             #{companyId}, #{employeeId}, #{assignedHrId}, #{category},
-            #{subject}, #{message}, #{priority}, 'OPEN'
+            #{subject}, #{message}, COALESCE(#{priority}, 'MEDIUM'),
+            <choose>
+                <when test="assignedHrId != null">'ACTIVE'</when>
+                <otherwise>'WAITING_IN_POOL'</otherwise>
+            </choose>
         )
     </insert>
+
+    <update id="claimQuery">
+        UPDATE hr_queries
+        SET assigned_hr_id = #{assignedHrId},
+            status = 'ACTIVE',
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND company_id = #{companyId}
+    </update>
 
     <update id="respondToQuery">
         UPDATE hr_queries
@@ -76,6 +102,31 @@
         WHERE id = #{id} AND company_id = #{companyId}
     </update>
 
+    <update id="resolveQuery">
+        UPDATE hr_queries
+        SET status = 'RESOLVED',
+            responded_at = COALESCE(responded_at, NOW()),
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND company_id = #{companyId}
+    </update>
+
+    <select id="findActiveQueryForEmployee" resultMap="HrQueryResultMap">
+        SELECT q.*,
+               (e.first_name || ' ' || e.last_name) AS employee_name,
+               e.employee_code,
+               u.display_name AS assigned_hr_name,
+               u.email AS assigned_hr_email
+        FROM hr_queries q
+        INNER JOIN employees e ON e.id = q.employee_id
+        LEFT JOIN users u ON u.id = q.assigned_hr_id
+        WHERE q.company_id = #{companyId}
+          AND q.employee_id = #{employeeId}
+          AND q.status IN ('WAITING_IN_POOL', 'ACTIVE', 'OPEN')
+        ORDER BY q.id DESC
+        LIMIT 1
+    </select>
+
     <select id="findHrPersonnelList" resultType="com.priyex.hrms.employee.dto.HrPersonnelDto">
         SELECT DISTINCT u.id, u.display_name AS displayName, u.email, u.avatar_url AS avatarUrl, r.name AS role
         FROM users u
@@ -85,5 +136,27 @@
           AND u.is_active = TRUE
         ORDER BY u.id ASC
     </select>
+
+    <!-- Message Thread Queries -->
+    <select id="findMessagesByQueryId" resultType="com.priyex.hrms.employee.model.HrQueryMessage">
+        SELECT id,
+               query_id AS queryId,
+               sender_user_id AS senderUserId,
+               sender_type AS senderType,
+               sender_name AS senderName,
+               message_text AS messageText,
+               created_at AS createdAt
+        FROM hr_query_messages
+        WHERE query_id = #{queryId}
+        ORDER BY id ASC
+    </select>
+
+    <insert id="insertMessage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO hr_query_messages (
+            query_id, sender_user_id, sender_type, sender_name, message_text, created_at
+        ) VALUES (
+            #{queryId}, #{senderUserId}, #{senderType}, #{senderName}, #{messageText}, NOW()
+        )
+    </insert>
 
 </mapper>

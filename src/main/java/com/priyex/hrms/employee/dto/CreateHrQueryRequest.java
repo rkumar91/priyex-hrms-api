@@ -12,8 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateHrQueryRequest {
-    @NotNull(message = "Assigned HR is required")
-    private Long assignedHrId;
+    private Long assignedHrId; // Nullable: if null, goes to available pool
 
     @NotBlank(message = "Category is required")
     private String category;
