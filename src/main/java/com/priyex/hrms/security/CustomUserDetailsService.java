@@ -52,6 +52,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .employeeId(user.getEmployeeId())
                 .companyId(user.getCompanyId())
                 .active(user.isActive())
+                .mustChangePassword(user.isMustChangePassword())
                 .roles(roles)
                 .permissions(permissions)
                 .build();

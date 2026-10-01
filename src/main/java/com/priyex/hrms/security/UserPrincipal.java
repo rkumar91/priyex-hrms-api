@@ -30,6 +30,7 @@ public class UserPrincipal implements UserDetails {
     private Long employeeId;
     private Long companyId;
     private boolean active;
+    private boolean mustChangePassword;
     private Set<String> roles;
     private Set<String> permissions;
 

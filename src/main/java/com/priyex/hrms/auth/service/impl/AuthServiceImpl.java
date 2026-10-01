@@ -155,6 +155,7 @@ public class AuthServiceImpl implements AuthService {
                 .avatarUrl(null) // loaded separately if needed
                 .companyId(principal.getCompanyId())
                 .employeeId(principal.getEmployeeId())
+                .mustChangePassword(principal.isMustChangePassword())
                 .roles(principal.getRoles())
                 .permissions(principal.getPermissions())
                 .build();

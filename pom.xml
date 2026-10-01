@@ -116,6 +116,12 @@
             <version>${bucket4j.version}</version>
         </dependency>
 
+        <!-- ═══════════ Email Delivery ═══════════ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- ═══════════ Code Generation ═══════════ -->
         <dependency>
             <groupId>org.projectlombok</groupId>

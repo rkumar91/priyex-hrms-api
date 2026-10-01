@@ -30,6 +30,7 @@ public class LoginResponse {
         private String avatarUrl;
         private Long companyId;
         private Long employeeId;
+        private Boolean mustChangePassword;
         private Set<String> roles;
         private Set<String> permissions;
     }
