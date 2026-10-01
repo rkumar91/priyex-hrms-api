@@ -77,7 +77,7 @@ public class ProfileRequestController {
             @RequestBody(required = false) ReviewProfileRequest reviewRequest
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
-        Long reviewerId = currentUser != null ? currentUser.getId() : 1L;
+        Long reviewerId = currentUser != null ? currentUser.getId() : null;
         String notes = reviewRequest != null ? reviewRequest.getReviewerNotes() : "Approved by HR";
 
         ProfileRequest approved = profileRequestService.approveRequest(companyId, id, reviewerId, notes);
@@ -93,7 +93,7 @@ public class ProfileRequestController {
             @RequestBody(required = false) ReviewProfileRequest reviewRequest
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
-        Long reviewerId = currentUser != null ? currentUser.getId() : 1L;
+        Long reviewerId = currentUser != null ? currentUser.getId() : null;
         String notes = (reviewRequest != null && reviewRequest.getReviewerNotes() != null)
                 ? reviewRequest.getReviewerNotes() : "Rejected by HR";
 
