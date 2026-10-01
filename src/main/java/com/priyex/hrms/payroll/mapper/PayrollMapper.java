@@ -33,6 +33,13 @@ public interface PayrollMapper {
             @Param("year") Integer year
     );
 
+    List<EmployeePayslip> findPayslipsFiltered(
+            @Param("companyId") Long companyId,
+            @Param("employeeId") Long employeeId,
+            @Param("year") Integer year,
+            @Param("month") Integer month
+    );
+
     int insertPayslip(EmployeePayslip payslip);
 
     int deletePayslipsByRunId(@Param("runId") Long runId);

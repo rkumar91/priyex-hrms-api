@@ -214,4 +214,36 @@
         WHERE payroll_run_id = #{runId}
     </delete>
 
+    <select id="findPayslipsFiltered" resultMap="EmployeePayslipResultMap">
+        SELECT 
+            p.*,
+            e.employee_code,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            d.name AS department_name,
+            e.designation_name,
+            e.pan_number,
+            e.uan_number,
+            e.pf_number,
+            e.bank_name,
+            e.bank_account_number,
+            e.bank_ifsc
+        FROM employee_payslips p
+        JOIN employees e ON p.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE 1=1
+        <if test="companyId != null">
+            AND p.company_id = #{companyId}
+        </if>
+        <if test="employeeId != null">
+            AND p.employee_id = #{employeeId}
+        </if>
+        <if test="year != null">
+            AND p.payroll_year = #{year}
+        </if>
+        <if test="month != null">
+            AND p.payroll_month = #{month}
+        </if>
+        ORDER BY p.payroll_year DESC, p.payroll_month DESC, e.employee_code ASC
+    </select>
+
 </mapper>

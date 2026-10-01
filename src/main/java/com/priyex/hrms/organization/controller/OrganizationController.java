@@ -22,6 +22,7 @@ import java.util.List;
 public class OrganizationController {
 
     private final DepartmentMapper departmentMapper;
+    private final com.priyex.hrms.organization.mapper.CompanyMapper companyMapper;
 
     @GetMapping("/departments")
     @Operation(summary = "Get active departments with employee counts")
@@ -29,5 +30,12 @@ public class OrganizationController {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         List<DepartmentDTO> departments = departmentMapper.findAllByCompanyId(companyId);
         return ResponseEntity.ok(ApiResponse.success(departments));
+    }
+
+    @GetMapping("/companies")
+    @Operation(summary = "Get all active companies/organizations in the enterprise")
+    public ResponseEntity<ApiResponse<List<com.priyex.hrms.organization.dto.CompanyDto>>> getCompanies() {
+        List<com.priyex.hrms.organization.dto.CompanyDto> companies = companyMapper.findAllActiveCompanies();
+        return ResponseEntity.ok(ApiResponse.success(companies));
     }
 }

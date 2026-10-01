@@ -111,6 +111,28 @@ public class PayrollController {
         return ResponseEntity.ok(ApiResponse.success(payslips));
     }
 
+    @GetMapping("/payslips")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get filtered payslips by organization, employee, year and month")
+    public ResponseEntity<ApiResponse<List<EmployeePayslip>>> getFilteredPayslips(
+            @CurrentUser UserPrincipal currentUser,
+            @RequestParam(value = "companyId", required = false) Long companyId,
+            @RequestParam(value = "employeeId", required = false) Long employeeId,
+            @RequestParam(value = "year", required = false) Integer year,
+            @RequestParam(value = "month", required = false) Integer month
+    ) {
+        Long resolvedCompanyId = (companyId != null) ? companyId : resolveCompanyId(currentUser);
+        boolean isHr = currentUser != null && currentUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_HR_ADMIN") || a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+        Long resolvedEmployeeId = employeeId;
+        if (!isHr) {
+            Employee me = employeeService.getMyProfile(resolveCompanyId(currentUser), currentUser != null ? currentUser.getId() : null, currentUser != null ? currentUser.getEmployeeId() : null);
+            resolvedEmployeeId = me.getId();
+        }
+        List<EmployeePayslip> payslips = payrollService.getPayslipsFiltered(resolvedCompanyId, resolvedEmployeeId, year, month);
+        return ResponseEntity.ok(ApiResponse.success(payslips));
+    }
+
     @GetMapping("/payslips/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get detailed payslip record")

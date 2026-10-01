@@ -29,4 +29,6 @@ public interface PayrollService {
     CtcBreakdownResponse updateEmployeeCtc(Long companyId, Long employeeId, java.math.BigDecimal annualCtc);
 
     List<CtcBreakdownResponse> getAllEmployeesCtc(Long companyId);
+
+    List<EmployeePayslip> getPayslipsFiltered(Long companyId, Long employeeId, Integer year, Integer month);
 }

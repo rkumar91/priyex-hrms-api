@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.tax.mapper.InvestmentDeclarationMapper">
+
+    <resultMap id="InvestmentDeclarationResultMap" type="com.priyex.hrms.tax.model.InvestmentDeclaration">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="financialYear" column="financial_year"/>
+        <result property="assessmentYear" column="assessment_year"/>
+        <result property="regime" column="regime"/>
+        <result property="status" column="status"/>
+
+        <result property="sec80cEpf" column="sec_80c_epf"/>
+        <result property="sec80cPpf" column="sec_80c_ppf"/>
+        <result property="sec80cElss" column="sec_80c_elss"/>
+        <result property="sec80cLifeInsurance" column="sec_80c_life_insurance"/>
+        <result property="sec80cHousingPrincipal" column="sec_80c_housing_principal"/>
+        <result property="sec80cTuitionFees" column="sec_80c_tuition_fees"/>
+        <result property="sec80cNscFd" column="sec_80c_nsc_fd"/>
+        <result property="sec80cTotal" column="sec_80c_total"/>
+        <result property="sec80cEligible" column="sec_80c_eligible"/>
+
+        <result property="sec80ccdNps" column="sec_80ccd_nps"/>
+        <result property="sec80ccdEligible" column="sec_80ccd_eligible"/>
+
+        <result property="sec80dSelfFamily" column="sec_80d_self_family"/>
+        <result property="sec80dParents" column="sec_80d_parents"/>
+        <result property="sec80dPreventiveCheckup" column="sec_80d_preventive_checkup"/>
+        <result property="sec80dTotal" column="sec_80d_total"/>
+        <result property="sec80dEligible" column="sec_80d_eligible"/>
+
+        <result property="sec24HomeLoanInterest" column="sec_24_home_loan_interest"/>
+        <result property="sec24Eligible" column="sec_24_eligible"/>
+
+        <result property="annualRentPaid" column="annual_rent_paid"/>
+        <result property="landlordName" column="landlord_name"/>
+        <result property="landlordPan" column="landlord_pan"/>
+        <result property="rentalCityType" column="rental_city_type"/>
+        <result property="hraExemptionEligible" column="hra_exemption_eligible"/>
+
+        <result property="sec80eEducationLoan" column="sec_80e_education_loan"/>
+        <result property="sec80gDonations" column="sec_80g_donations"/>
+        <result property="sec80ttaSavingsInterest" column="sec_80tta_savings_interest"/>
+
+        <result property="totalDeclaredDeductions" column="total_declared_deductions"/>
+        <result property="totalEligibleDeductions" column="total_eligible_deductions"/>
+        <result property="remarks" column="remarks"/>
+        <result property="hrNotes" column="hr_notes"/>
+        <result property="submittedAt" column="submitted_at"/>
+        <result property="verifiedAt" column="verified_at"/>
+        <result property="verifiedBy" column="verified_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+
+        <!-- Joined employee fields -->
+        <result property="employeeCode" column="employee_code"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="departmentName" column="department_name"/>
+        <result property="designationName" column="designation_name"/>
+        <result property="annualCtc" column="annual_ctc"/>
+    </resultMap>
+
+    <sql id="declarationColumns">
+        d.id, d.company_id, d.employee_id, d.financial_year, d.assessment_year, d.regime, d.status,
+        d.sec_80c_epf, d.sec_80c_ppf, d.sec_80c_elss, d.sec_80c_life_insurance, d.sec_80c_housing_principal,
+        d.sec_80c_tuition_fees, d.sec_80c_nsc_fd, d.sec_80c_total, d.sec_80c_eligible,
+        d.sec_80ccd_nps, d.sec_80ccd_eligible,
+        d.sec_80d_self_family, d.sec_80d_parents, d.sec_80d_preventive_checkup, d.sec_80d_total, d.sec_80d_eligible,
+        d.sec_24_home_loan_interest, d.sec_24_eligible,
+        d.annual_rent_paid, d.landlord_name, d.landlord_pan, d.rental_city_type, d.hra_exemption_eligible,
+        d.sec_80e_education_loan, d.sec_80g_donations, d.sec_80tta_savings_interest,
+        d.total_declared_deductions, d.total_eligible_deductions,
+        d.remarks, d.hr_notes, d.submitted_at, d.verified_at, d.verified_by, d.created_at, d.updated_at,
+        e.employee_code,
+        CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+        dept.name AS department_name,
+        e.designation_name,
+        COALESCE(e.annual_ctc, 0.00) AS annual_ctc
+    </sql>
+
+    <select id="findByEmployeeAndYear" resultMap="InvestmentDeclarationResultMap">
+        SELECT <include refid="declarationColumns"/>
+        FROM employee_investment_declarations d
+        JOIN employees e ON d.employee_id = e.id
+        LEFT JOIN departments dept ON e.department_id = dept.id
+        WHERE d.employee_id = #{employeeId} AND d.financial_year = #{financialYear}
+    </select>
+
+    <select id="findById" resultMap="InvestmentDeclarationResultMap">
+        SELECT <include refid="declarationColumns"/>
+        FROM employee_investment_declarations d
+        JOIN employees e ON d.employee_id = e.id
+        LEFT JOIN departments dept ON e.department_id = dept.id
+        WHERE d.id = #{id}
+    </select>
+
+    <select id="findByCompanyAndYear" resultMap="InvestmentDeclarationResultMap">
+        SELECT <include refid="declarationColumns"/>
+        FROM employee_investment_declarations d
+        JOIN employees e ON d.employee_id = e.id
+        LEFT JOIN departments dept ON e.department_id = dept.id
+        WHERE d.company_id = #{companyId}
+        <if test="financialYear != null and financialYear != ''">
+            AND d.financial_year = #{financialYear}
+        </if>
+        <if test="status != null and status != ''">
+            AND d.status = #{status}
+        </if>
+        ORDER BY d.updated_at DESC, e.employee_code ASC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO employee_investment_declarations (
+            company_id, employee_id, financial_year, assessment_year, regime, status,
+            sec_80c_epf, sec_80c_ppf, sec_80c_elss, sec_80c_life_insurance, sec_80c_housing_principal,
+            sec_80c_tuition_fees, sec_80c_nsc_fd, sec_80c_total, sec_80c_eligible,
+            sec_80ccd_nps, sec_80ccd_eligible,
+            sec_80d_self_family, sec_80d_parents, sec_80d_preventive_checkup, sec_80d_total, sec_80d_eligible,
+            sec_24_home_loan_interest, sec_24_eligible,
+            annual_rent_paid, landlord_name, landlord_pan, rental_city_type, hra_exemption_eligible,
+            sec_80e_education_loan, sec_80g_donations, sec_80tta_savings_interest,
+            total_declared_deductions, total_eligible_deductions,
+            remarks, hr_notes, submitted_at, verified_at, verified_by, created_at, updated_at
+        ) VALUES (
+            #{companyId}, #{employeeId}, #{financialYear}, #{assessmentYear}, #{regime}, #{status},
+            #{sec80cEpf}, #{sec80cPpf}, #{sec80cElss}, #{sec80cLifeInsurance}, #{sec80cHousingPrincipal},
+            #{sec80cTuitionFees}, #{sec80cNscFd}, #{sec80cTotal}, #{sec80cEligible},
+            #{sec80ccdNps}, #{sec80ccdEligible},
+            #{sec80dSelfFamily}, #{sec80dParents}, #{sec80dPreventiveCheckup}, #{sec80dTotal}, #{sec80dEligible},
+            #{sec24HomeLoanInterest}, #{sec24Eligible},
+            #{annualRentPaid}, #{landlordName}, #{landlordPan}, #{rentalCityType}, #{hraExemptionEligible},
+            #{sec80eEducationLoan}, #{sec80gDonations}, #{sec80ttaSavingsInterest},
+            #{totalDeclaredDeductions}, #{totalEligibleDeductions},
+            #{remarks}, #{hrNotes}, #{submittedAt}, #{verifiedAt}, #{verifiedBy}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE employee_investment_declarations
+        SET
+            regime = #{regime},
+            status = #{status},
+            sec_80c_epf = #{sec80cEpf},
+            sec_80c_ppf = #{sec80cPpf},
+            sec_80c_elss = #{sec80cElss},
+            sec_80c_life_insurance = #{sec80cLifeInsurance},
+            sec_80c_housing_principal = #{sec80cHousingPrincipal},
+            sec_80c_tuition_fees = #{sec80cTuitionFees},
+            sec_80c_nsc_fd = #{sec80cNscFd},
+            sec_80c_total = #{sec80cTotal},
+            sec_80c_eligible = #{sec80cEligible},
+            sec_80ccd_nps = #{sec80ccdNps},
+            sec_80ccd_eligible = #{sec80ccdEligible},
+            sec_80d_self_family = #{sec80dSelfFamily},
+            sec_80d_parents = #{sec80dParents},
+            sec_80d_preventive_checkup = #{sec80dPreventiveCheckup},
+            sec_80d_total = #{sec80dTotal},
+            sec_80d_eligible = #{sec80dEligible},
+            sec_24_home_loan_interest = #{sec24HomeLoanInterest},
+            sec_24_eligible = #{sec24Eligible},
+            annual_rent_paid = #{annualRentPaid},
+            landlord_name = #{landlordName},
+            landlord_pan = #{landlordPan},
+            rental_city_type = #{rentalCityType},
+            hra_exemption_eligible = #{hraExemptionEligible},
+            sec_80e_education_loan = #{sec80eEducationLoan},
+            sec_80g_donations = #{sec80gDonations},
+            sec_80tta_savings_interest = #{sec80ttaSavingsInterest},
+            total_declared_deductions = #{totalDeclaredDeductions},
+            total_eligible_deductions = #{totalEligibleDeductions},
+            remarks = #{remarks},
+            submitted_at = #{submittedAt},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE employee_investment_declarations
+        SET
+            status = #{status},
+            hr_notes = #{hrNotes},
+            verified_by = #{verifiedBy},
+            verified_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

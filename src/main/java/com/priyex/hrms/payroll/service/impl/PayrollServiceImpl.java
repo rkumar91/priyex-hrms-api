@@ -253,6 +253,11 @@ public class PayrollServiceImpl implements PayrollService {
     }
 
     @Override
+    public List<EmployeePayslip> getPayslipsFiltered(Long companyId, Long employeeId, Integer year, Integer month) {
+        return payrollMapper.findPayslipsFiltered(companyId, employeeId, year, month);
+    }
+
+    @Override
     public EmployeePayslip getPayslip(Long payslipId) {
         return payrollMapper.findPayslipById(payslipId)
                 .orElseThrow(() -> new ResourceNotFoundException("EmployeePayslip", "id", payslipId));
