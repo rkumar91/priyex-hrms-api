@@ -74,7 +74,7 @@ public class HrQueryController {
     @Operation(summary = "HR Manager claims and connects to a query waiting in the pool")
     public ResponseEntity<ApiResponse<HrQuery>> claimQuery(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long hrUserId = (currentUser != null) ? currentUser.getId() : 1L;
@@ -89,7 +89,7 @@ public class HrQueryController {
     @Operation(summary = "Mark an active query as resolved")
     public ResponseEntity<ApiResponse<HrQuery>> resolveQuery(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         HrQuery resolved = hrQueryService.resolveQuery(companyId, id);
@@ -114,7 +114,7 @@ public class HrQueryController {
     @Operation(summary = "Get message thread for a query")
     public ResponseEntity<ApiResponse<List<HrQueryMessage>>> getMessages(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         List<HrQueryMessage> messages = hrQueryService.getMessages(companyId, id);
@@ -126,7 +126,7 @@ public class HrQueryController {
     @Operation(summary = "Send a new message into the query chat thread")
     public ResponseEntity<ApiResponse<HrQueryMessage>> sendMessage(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody SendMessageRequest request
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
@@ -149,8 +149,8 @@ public class HrQueryController {
     @Operation(summary = "List queries (HR sees all/assigned queries, employee sees their own)")
     public ResponseEntity<ApiResponse<List<HrQuery>>> getQueries(
             @CurrentUser UserPrincipal currentUser,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long assignedHrId
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "assignedHrId", required = false) Long assignedHrId
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         boolean isHrOrAdmin = currentUser != null && (
@@ -174,7 +174,7 @@ public class HrQueryController {
     @Operation(summary = "HR Manager responds to employee query")
     public ResponseEntity<ApiResponse<HrQuery>> respondToQuery(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody RespondHrQueryRequest request
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;

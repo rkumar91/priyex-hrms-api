@@ -59,8 +59,8 @@ public class LeaveController {
     @Operation(summary = "Approve leave application")
     public ResponseEntity<ApiResponse<LeaveRequest>> approveLeave(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
-            @RequestParam(required = false) String comment
+            @PathVariable("id") Long id,
+            @RequestParam(name = "comment", required = false) String comment
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long actorId = currentUser != null ? currentUser.getId() : 1L;
@@ -75,8 +75,8 @@ public class LeaveController {
     @Operation(summary = "Reject leave application")
     public ResponseEntity<ApiResponse<LeaveRequest>> rejectLeave(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
-            @RequestParam(required = false) String comment
+            @PathVariable("id") Long id,
+            @RequestParam(name = "comment", required = false) String comment
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long actorId = currentUser != null ? currentUser.getId() : 1L;

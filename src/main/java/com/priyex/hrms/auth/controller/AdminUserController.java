@@ -83,7 +83,7 @@ public class AdminUserController {
     @Operation(summary = "Admin assigns or updates role for a specific employee")
     public ResponseEntity<ApiResponse<EmployeeUserRoleDto>> updateEmployeeRole(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long employeeId,
+            @PathVariable("employeeId") Long employeeId,
             @Valid @RequestBody UpdateUserRoleRequest request
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
@@ -148,7 +148,7 @@ public class AdminUserController {
     @Operation(summary = "Admin assigns or updates a user role (e.g. HR_ADMIN, EMPLOYEE, SUPER_ADMIN)")
     public ResponseEntity<ApiResponse<AdminUserResponse>> updateUserRole(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateUserRoleRequest request
     ) {
         User user = userMapper.findById(id);
@@ -187,7 +187,7 @@ public class AdminUserController {
     @Transactional
     @Operation(summary = "Admin activates or deactivates a user login")
     public ResponseEntity<ApiResponse<Void>> updateUserStatus(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody UpdateUserStatusRequest request
     ) {
         User user = userMapper.findById(id);

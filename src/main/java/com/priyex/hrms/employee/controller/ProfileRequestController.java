@@ -49,7 +49,7 @@ public class ProfileRequestController {
     @Operation(summary = "Get list of profile change requests")
     public ResponseEntity<ApiResponse<List<ProfileRequest>>> getRequests(
             @CurrentUser UserPrincipal currentUser,
-            @RequestParam(required = false) String status
+            @RequestParam(name = "status", required = false) String status
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         boolean isHrOrAdmin = currentUser != null && (
@@ -73,7 +73,7 @@ public class ProfileRequestController {
     @Operation(summary = "HR Manager / Admin approves employee profile change request")
     public ResponseEntity<ApiResponse<ProfileRequest>> approveRequest(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody(required = false) ReviewProfileRequest reviewRequest
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
@@ -89,7 +89,7 @@ public class ProfileRequestController {
     @Operation(summary = "HR Manager / Admin rejects employee profile change request")
     public ResponseEntity<ApiResponse<ProfileRequest>> rejectRequest(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody(required = false) ReviewProfileRequest reviewRequest
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;

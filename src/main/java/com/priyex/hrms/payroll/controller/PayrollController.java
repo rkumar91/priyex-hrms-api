@@ -68,7 +68,7 @@ public class PayrollController {
     @Operation(summary = "Get single payroll run details (HR / Admin only)")
     public ResponseEntity<ApiResponse<PayrollRun>> getPayrollRun(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         Long companyId = resolveCompanyId(currentUser);
         PayrollRun run = payrollService.getPayrollRun(companyId, id);
@@ -80,7 +80,7 @@ public class PayrollController {
     @Operation(summary = "Get all employee payslips in a specific payroll run (HR / Admin only)")
     public ResponseEntity<ApiResponse<List<EmployeePayslip>>> getRunPayslips(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         Long companyId = resolveCompanyId(currentUser);
         List<EmployeePayslip> payslips = payrollService.getPayslipsForRun(companyId, id);
@@ -114,7 +114,7 @@ public class PayrollController {
     @GetMapping("/payslips/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get detailed payslip record")
-    public ResponseEntity<ApiResponse<EmployeePayslip>> getPayslip(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<EmployeePayslip>> getPayslip(@PathVariable("id") Long id) {
         EmployeePayslip payslip = payrollService.getPayslip(id);
         return ResponseEntity.ok(ApiResponse.success(payslip));
     }
@@ -133,7 +133,7 @@ public class PayrollController {
     @Operation(summary = "Update employee Annual CTC (HR / Admin only)")
     public ResponseEntity<ApiResponse<CtcBreakdownResponse>> updateEmployeeCtc(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long employeeId,
+            @PathVariable("employeeId") Long employeeId,
             @Valid @RequestBody com.priyex.hrms.payroll.dto.UpdateEmployeeCtcRequest request
     ) {
         Long companyId = resolveCompanyId(currentUser);

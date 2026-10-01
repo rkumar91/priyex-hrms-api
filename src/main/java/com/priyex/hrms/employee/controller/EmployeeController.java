@@ -35,11 +35,11 @@ public class EmployeeController {
     @Operation(summary = "Search & list employees with pagination (public info for regular employees)")
     public ResponseEntity<ApiResponse<PagedResponse<Employee>>> getEmployees(
             @CurrentUser UserPrincipal currentUser,
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false) Long departmentId,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(name = "query", required = false) String query,
+            @RequestParam(name = "departmentId", required = false) Long departmentId,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         PagedResponse<Employee> result = employeeService.getEmployees(companyId, query, departmentId, status, page, size);
@@ -91,7 +91,7 @@ public class EmployeeController {
     @Operation(summary = "Get employee profile by ID")
     public ResponseEntity<ApiResponse<Employee>> getEmployeeById(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Employee employee = employeeService.getEmployeeById(companyId, id);
@@ -129,7 +129,7 @@ public class EmployeeController {
     @Operation(summary = "Update employee details")
     public ResponseEntity<ApiResponse<Employee>> updateEmployee(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody CreateEmployeeRequest request
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
@@ -142,7 +142,7 @@ public class EmployeeController {
     @Operation(summary = "Deactivate employee")
     public ResponseEntity<ApiResponse<Void>> deleteEmployee(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         employeeService.deleteEmployee(companyId, id);
@@ -197,7 +197,7 @@ public class EmployeeController {
     @Operation(summary = "Delete an uploaded document for current employee")
     public ResponseEntity<ApiResponse<Void>> deleteMyDocument(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long docId
+            @PathVariable("docId") Long docId
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long userId = currentUser != null ? currentUser.getId() : null;
@@ -212,7 +212,7 @@ public class EmployeeController {
     @Operation(summary = "Get employee ID documents (by HR/Admin or self)")
     public ResponseEntity<ApiResponse<List<EmployeeDocument>>> getEmployeeDocuments(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         List<EmployeeDocument> docs = employeeService.getDocuments(id);
         return ResponseEntity.ok(ApiResponse.success(docs));
@@ -223,7 +223,7 @@ public class EmployeeController {
     @Operation(summary = "Upload ID document for an employee (HR/Admin)")
     public ResponseEntity<ApiResponse<EmployeeDocument>> uploadEmployeeDocument(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UploadDocumentRequest request
     ) {
         Long actorId = currentUser != null ? currentUser.getId() : 1L;
@@ -236,8 +236,8 @@ public class EmployeeController {
     @Operation(summary = "Delete employee ID document")
     public ResponseEntity<ApiResponse<Void>> deleteEmployeeDocument(
             @CurrentUser UserPrincipal currentUser,
-            @PathVariable Long id,
-            @PathVariable Long docId
+            @PathVariable("id") Long id,
+            @PathVariable("docId") Long docId
     ) {
         employeeService.deleteDocument(id, docId);
         return ResponseEntity.ok(ApiResponse.success(null, "Document deleted successfully"));
