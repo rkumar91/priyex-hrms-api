@@ -1,5 +1,7 @@
 package com.priyex.hrms.notification.controller;
 
+import com.priyex.hrms.common.exception.BadRequestException;
+import com.priyex.hrms.common.exception.ResourceNotFoundException;
 import com.priyex.hrms.common.response.ApiResponse;
 import com.priyex.hrms.notification.dto.CreateAnnouncementRequest;
 import com.priyex.hrms.notification.mapper.AnnouncementMapper;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -26,12 +29,20 @@ public class NotificationController {
     private final AnnouncementMapper announcementMapper;
 
     @GetMapping("/broadcasts")
-    @Operation(summary = "Get active announcements for current organization visible across all users")
+    @Operation(summary = "Get currently live announcements (within their schedule window) for the current organization")
     public ResponseEntity<ApiResponse<List<Announcement>>> getBroadcasts(@CurrentUser UserPrincipal currentUser) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long userId = (currentUser != null) ? currentUser.getId() : 1L;
         List<Announcement> list = announcementMapper.findAllForUser(companyId, userId);
         return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    @GetMapping("/broadcasts/manage")
+    @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN')")
+    @Operation(summary = "List all announcements (scheduled, live and expired) for management (HR/Admin)")
+    public ResponseEntity<ApiResponse<List<Announcement>>> getAllForManagement(@CurrentUser UserPrincipal currentUser) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        return ResponseEntity.ok(ApiResponse.success(announcementMapper.findAllForAdmin(companyId)));
     }
 
     @PostMapping("/broadcasts")
@@ -44,12 +55,16 @@ public class NotificationController {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long userId = (currentUser != null) ? currentUser.getId() : 1L;
 
+        validateWindow(request.getPublishedAt(), request.getExpiresAt());
+
         Announcement announcement = Announcement.builder()
                 .companyId(companyId)
                 .title(request.getTitle().trim())
                 .body(request.getBody().trim())
                 .priority(request.getPriority() != null ? request.getPriority().toUpperCase() : "NORMAL")
                 .targetAudience(request.getTargetAudience() != null ? request.getTargetAudience() : "ALL")
+                .publishedAt(request.getPublishedAt())
+                .expiresAt(request.getExpiresAt())
                 .isPublished(true)
                 .requiresAck(request.getRequiresAck() != null ? request.getRequiresAck() : false)
                 .createdBy(userId)
@@ -57,6 +72,59 @@ public class NotificationController {
 
         announcementMapper.insert(announcement);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(announcement, "Announcement broadcasted successfully"));
+    }
+
+    @PutMapping("/broadcasts/{id}")
+    @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN')")
+    @Operation(summary = "Update an announcement's content and schedule window (HR/Admin)")
+    public ResponseEntity<ApiResponse<Announcement>> updateBroadcast(
+            @CurrentUser UserPrincipal currentUser,
+            @PathVariable("id") Long id,
+            @Valid @RequestBody CreateAnnouncementRequest request
+    ) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        announcementMapper.findById(id, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Announcement", "id", id));
+
+        validateWindow(request.getPublishedAt(), request.getExpiresAt());
+
+        Announcement announcement = Announcement.builder()
+                .id(id)
+                .companyId(companyId)
+                .title(request.getTitle().trim())
+                .body(request.getBody().trim())
+                .priority(request.getPriority() != null ? request.getPriority().toUpperCase() : "NORMAL")
+                .targetAudience(request.getTargetAudience() != null ? request.getTargetAudience() : "ALL")
+                .publishedAt(request.getPublishedAt())
+                .expiresAt(request.getExpiresAt())
+                .requiresAck(request.getRequiresAck() != null ? request.getRequiresAck() : false)
+                .build();
+
+        announcementMapper.update(announcement);
+        Announcement updated = announcementMapper.findById(id, companyId).orElse(announcement);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Announcement updated successfully"));
+    }
+
+    @PutMapping("/broadcasts/{id}/end")
+    @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN')")
+    @Operation(summary = "End an announcement immediately by closing its display window now (HR/Admin)")
+    public ResponseEntity<ApiResponse<Void>> endBroadcastNow(
+            @CurrentUser UserPrincipal currentUser,
+            @PathVariable("id") Long id
+    ) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        if (announcementMapper.endNow(id, companyId) == 0) {
+            throw new ResourceNotFoundException("Announcement", "id", id);
+        }
+        return ResponseEntity.ok(ApiResponse.success(null, "Announcement ended"));
+    }
+
+    private void validateWindow(Instant start, Instant end) {
+        if (end == null) return;
+        Instant effectiveStart = start != null ? start : Instant.now();
+        if (!end.isAfter(effectiveStart)) {
+            throw new BadRequestException("End date/time must be after the start date/time");
+        }
     }
 
     @PutMapping("/broadcasts/{id}/read")

@@ -31,4 +31,7 @@ public class Announcement {
     // User-specific state
     private Boolean isRead;
     private Instant acknowledgedAt;
+
+    // Admin management view
+    private Long readCount;
 }
