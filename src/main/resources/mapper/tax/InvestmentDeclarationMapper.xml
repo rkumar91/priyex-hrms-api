@@ -76,7 +76,7 @@
         e.employee_code,
         CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
         dept.name AS department_name,
-        e.designation_name,
+        des.name AS designation_name,
         COALESCE(e.annual_ctc, 0.00) AS annual_ctc
     </sql>
 
@@ -85,6 +85,7 @@
         FROM employee_investment_declarations d
         JOIN employees e ON d.employee_id = e.id
         LEFT JOIN departments dept ON e.department_id = dept.id
+        LEFT JOIN designations des ON e.designation_id = des.id
         WHERE d.employee_id = #{employeeId} AND d.financial_year = #{financialYear}
     </select>
 
@@ -93,6 +94,7 @@
         FROM employee_investment_declarations d
         JOIN employees e ON d.employee_id = e.id
         LEFT JOIN departments dept ON e.department_id = dept.id
+        LEFT JOIN designations des ON e.designation_id = des.id
         WHERE d.id = #{id}
     </select>
 
@@ -101,6 +103,7 @@
         FROM employee_investment_declarations d
         JOIN employees e ON d.employee_id = e.id
         LEFT JOIN departments dept ON e.department_id = dept.id
+        LEFT JOIN designations des ON e.designation_id = des.id
         WHERE d.company_id = #{companyId}
         <if test="financialYear != null and financialYear != ''">
             AND d.financial_year = #{financialYear}

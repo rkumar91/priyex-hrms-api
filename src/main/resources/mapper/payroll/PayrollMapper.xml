@@ -117,7 +117,7 @@
             e.employee_code,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
             d.name AS department_name,
-            e.designation_name,
+            des.name AS designation_name,
             e.pan_number,
             e.uan_number,
             e.pf_number,
@@ -127,6 +127,7 @@
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN designations des ON e.designation_id = des.id
         WHERE p.payroll_run_id = #{runId}
         ORDER BY e.employee_code ASC
     </select>
@@ -137,7 +138,7 @@
             e.employee_code,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
             d.name AS department_name,
-            e.designation_name,
+            des.name AS designation_name,
             e.pan_number,
             e.uan_number,
             e.pf_number,
@@ -147,6 +148,7 @@
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN designations des ON e.designation_id = des.id
         WHERE p.employee_id = #{employeeId}
         ORDER BY p.payroll_year DESC, p.payroll_month DESC
     </select>
@@ -157,7 +159,7 @@
             e.employee_code,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
             d.name AS department_name,
-            e.designation_name,
+            des.name AS designation_name,
             e.pan_number,
             e.uan_number,
             e.pf_number,
@@ -167,6 +169,7 @@
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN designations des ON e.designation_id = des.id
         WHERE p.id = #{id}
     </select>
 
@@ -176,7 +179,7 @@
             e.employee_code,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
             d.name AS department_name,
-            e.designation_name,
+            des.name AS designation_name,
             e.pan_number,
             e.uan_number,
             e.pf_number,
@@ -186,6 +189,7 @@
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN designations des ON e.designation_id = des.id
         WHERE p.employee_id = #{employeeId} AND p.payroll_month = #{month} AND p.payroll_year = #{year}
     </select>
 
@@ -220,7 +224,7 @@
             e.employee_code,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
             d.name AS department_name,
-            e.designation_name,
+            des.name AS designation_name,
             e.pan_number,
             e.uan_number,
             e.pf_number,
@@ -230,6 +234,7 @@
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN designations des ON e.designation_id = des.id
         WHERE 1=1
         <if test="companyId != null">
             AND p.company_id = #{companyId}
