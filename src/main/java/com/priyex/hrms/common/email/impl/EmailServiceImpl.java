@@ -23,17 +23,17 @@ public class EmailServiceImpl implements EmailService {
     private String fromEmail;
 
     @Override
-    public void sendOnboardingInvite(String recipientEmail, String recipientName, String tempPassword, String loginUrl) {
+    public void sendOnboardingInvite(String recipientEmail, String workEmail, String recipientName, String tempPassword, String loginUrl) {
         String subject = "Welcome to Priyex People — Your Onboarding Credentials";
         String body = String.format("""
             Hello %s,
 
             Welcome to Priyex People Enterprise HRMS!
 
-            Your onboarding profile has been initiated. Please use the temporary credentials below to log in:
+            Your onboarding profile has been initiated. Please use your official corporate credentials below to log into the HRMS portal:
 
             Portal URL: %s
-            Username / Email: %s
+            Login ID (Work Email): %s
             Temporary Password: %s
 
             *Important*: Upon first login, you will be required to change your temporary password to a permanent secure password and complete your onboarding profile submission.
@@ -41,7 +41,7 @@ public class EmailServiceImpl implements EmailService {
             Warm regards,
             Priyex People HR Operations
             From: %s
-            """, recipientName, loginUrl, recipientEmail, tempPassword, fromEmail);
+            """, recipientName, loginUrl, workEmail, tempPassword, fromEmail);
 
         log.info("\n══════════════════ [EMAIL DISPATCH via {}] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
                 fromEmail, recipientEmail, subject, body);

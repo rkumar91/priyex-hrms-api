@@ -15,6 +15,7 @@ public class InitiateOnboardingResponse {
     private String employeeCode;
     private String fullName;
     private String workEmail;
+    private String alternativeEmail;
     private String tempPassword;
     private String inviteUrl;
     private String status;

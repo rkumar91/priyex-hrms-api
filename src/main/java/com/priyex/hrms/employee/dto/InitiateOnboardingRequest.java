@@ -22,6 +22,10 @@ public class InitiateOnboardingRequest {
     @Email(message = "Must be a valid email format")
     private String workEmail;
 
+    @NotBlank(message = "Alternative email is required")
+    @Email(message = "Must be a valid email format")
+    private String alternativeEmail;
+
     @NotBlank(message = "Phone number is required")
     private String personalPhone;
 

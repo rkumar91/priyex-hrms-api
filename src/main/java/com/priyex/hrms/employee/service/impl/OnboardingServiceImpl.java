@@ -16,7 +16,9 @@ import com.priyex.hrms.employee.model.EmployeeDocument;
 import com.priyex.hrms.employee.service.OnboardingService;
 import com.priyex.hrms.notification.mapper.AnnouncementMapper;
 import com.priyex.hrms.notification.model.Announcement;
+import com.priyex.hrms.organization.dto.CompanyDto;
 import com.priyex.hrms.organization.dto.DepartmentDTO;
+import com.priyex.hrms.organization.mapper.CompanyMapper;
 import com.priyex.hrms.organization.mapper.DepartmentMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,7 @@ public class OnboardingServiceImpl implements OnboardingService {
     private final UserMapper userMapper;
     private final EmployeeDocumentMapper employeeDocumentMapper;
     private final DepartmentMapper departmentMapper;
+    private final CompanyMapper companyMapper;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final AnnouncementMapper announcementMapper;
@@ -61,6 +64,8 @@ public class OnboardingServiceImpl implements OnboardingService {
         int randomPin = (int)(1000 + Math.random() * 9000);
         String tempPassword = "Priyex@" + randomPin;
 
+        String alternativeEmail = req.getAlternativeEmail() != null ? req.getAlternativeEmail().trim().toLowerCase() : null;
+
         // Build Employee with status ONBOARDING
         Employee emp = Employee.builder()
                 .companyId(companyId)
@@ -69,6 +74,7 @@ public class OnboardingServiceImpl implements OnboardingService {
                 .middleName(req.getMiddleName() != null ? req.getMiddleName().trim() : null)
                 .lastName(req.getLastName().trim())
                 .workEmail(workEmail)
+                .personalEmail(alternativeEmail)
                 .personalPhone(req.getPersonalPhone().trim())
                 .departmentId(req.getDepartmentId())
                 .designationId(req.getDesignationId())
@@ -110,10 +116,12 @@ public class OnboardingServiceImpl implements OnboardingService {
         // Link user_id on employee
         employeeMapper.linkUserId(emp.getId(), user.getId(), companyId);
 
-        // Send onboarding invitation email from tech.priyex@gmail.com
+        // Send onboarding invitation email to alternative email (fallback to work email if not present)
         String loginUrl = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl + "/login" : "http://localhost:3000/login";
         String fullName = req.getFirstName().trim() + " " + req.getLastName().trim();
-        emailService.sendOnboardingInvite(workEmail, fullName, tempPassword, loginUrl);
+        String recipientEmail = (alternativeEmail != null && !alternativeEmail.isBlank()) ? alternativeEmail : workEmail;
+
+        emailService.sendOnboardingInvite(recipientEmail, workEmail, fullName, tempPassword, loginUrl);
 
         return InitiateOnboardingResponse.builder()
                 .employeeId(emp.getId())
@@ -121,10 +129,11 @@ public class OnboardingServiceImpl implements OnboardingService {
                 .employeeCode(empCode)
                 .fullName(fullName)
                 .workEmail(workEmail)
+                .alternativeEmail(alternativeEmail)
                 .tempPassword(tempPassword)
                 .inviteUrl(loginUrl)
                 .status("ONBOARDING")
-                .message("Onboarding initiated and invitation email dispatched from tech.priyex@gmail.com")
+                .message("Onboarding initiated and invitation email dispatched to " + recipientEmail + " from tech.priyex@gmail.com")
                 .build();
     }
 
@@ -265,5 +274,42 @@ public class OnboardingServiceImpl implements OnboardingService {
 
         log.info("HR requested onboarding revisions for employee {}: {}", employeeId, feedbackNotes);
         return employee;
+    }
+
+    @Override
+    public String generateWorkEmail(Long companyId, String firstName, String lastName) {
+        if (firstName == null || firstName.isBlank()) {
+            return "";
+        }
+        String cleanFirst = firstName.trim().toLowerCase().replaceAll("[^a-z0-9]", "");
+        String cleanLast = (lastName != null && !lastName.isBlank())
+                ? lastName.trim().toLowerCase().replaceAll("[^a-z0-9]", "")
+                : "";
+
+        String basePrefix = cleanLast.isEmpty() ? cleanFirst : cleanFirst + "." + cleanLast;
+
+        String domain = "priyex.com";
+        try {
+            if (companyId != null) {
+                CompanyDto company = companyMapper.findById(companyId);
+                if (company != null && company.getEmail() != null && company.getEmail().contains("@")) {
+                    String compEmail = company.getEmail();
+                    String extDomain = compEmail.substring(compEmail.indexOf('@') + 1).trim().toLowerCase();
+                    if (!extDomain.isBlank()) {
+                        domain = extDomain;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not determine company email domain, defaulting to priyex.com: {}", e.getMessage());
+        }
+
+        String candidate = basePrefix + "@" + domain;
+        int counter = 1;
+        while (userMapper.findByEmail(candidate) != null) {
+            counter++;
+            candidate = basePrefix + counter + "@" + domain;
+        }
+        return candidate;
     }
 }

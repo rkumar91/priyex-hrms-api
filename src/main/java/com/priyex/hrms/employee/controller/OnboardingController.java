@@ -53,6 +53,19 @@ public class OnboardingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, response.getMessage()));
     }
 
+    @GetMapping("/generate-email")
+    @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN') or hasAuthority('emp.create')")
+    @Operation(summary = "Generate a unique corporate work email based on first and last name")
+    public ResponseEntity<ApiResponse<Map<String, String>>> generateWorkEmail(
+            @CurrentUser UserPrincipal currentUser,
+            @RequestParam("firstName") String firstName,
+            @RequestParam(value = "lastName", required = false) String lastName
+    ) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        String generatedEmail = onboardingService.generateWorkEmail(companyId, firstName, lastName);
+        return ResponseEntity.ok(ApiResponse.success(Map.of("email", generatedEmail)));
+    }
+
     @PostMapping("/submit")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Employee submits complete onboarding profile details for HR verification")

@@ -19,4 +19,6 @@ public interface OnboardingService {
     Employee approveOnboarding(Long companyId, Long actorId, Long employeeId, String remarks);
 
     Employee requestRevisions(Long companyId, Long actorId, Long employeeId, String feedbackNotes);
+
+    String generateWorkEmail(Long companyId, String firstName, String lastName);
 }

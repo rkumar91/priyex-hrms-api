@@ -17,11 +17,11 @@ WHERE user_id NOT IN (SELECT id FROM users WHERE email IN ('admin@priyex.com', '
 DELETE FROM announcement_acknowledgments 
 WHERE user_id NOT IN (SELECT id FROM users WHERE email IN ('admin@priyex.com', 'hr@priyex.com', 'employee@priyex.com'));
 
-DELETE FROM live_chat_messages 
+DELETE FROM hr_query_messages 
 WHERE sender_user_id IS NOT NULL 
   AND sender_user_id NOT IN (SELECT id FROM users WHERE email IN ('admin@priyex.com', 'hr@priyex.com', 'employee@priyex.com'));
 
-UPDATE files 
+UPDATE file_metadata 
 SET uploaded_by = (SELECT id FROM users WHERE email = 'admin@priyex.com' LIMIT 1) 
 WHERE uploaded_by IS NOT NULL 
   AND uploaded_by NOT IN (SELECT id FROM users WHERE email IN ('admin@priyex.com', 'hr@priyex.com', 'employee@priyex.com'));
