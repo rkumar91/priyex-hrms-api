@@ -2,7 +2,9 @@ package com.priyex.hrms.organization.controller;
 
 import com.priyex.hrms.common.response.ApiResponse;
 import com.priyex.hrms.organization.dto.DepartmentDTO;
+import com.priyex.hrms.organization.dto.DesignationDTO;
 import com.priyex.hrms.organization.mapper.DepartmentMapper;
+import com.priyex.hrms.organization.mapper.DesignationMapper;
 import com.priyex.hrms.security.CurrentUser;
 import com.priyex.hrms.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +24,7 @@ import java.util.List;
 public class OrganizationController {
 
     private final DepartmentMapper departmentMapper;
+    private final DesignationMapper designationMapper;
     private final com.priyex.hrms.organization.mapper.CompanyMapper companyMapper;
 
     @GetMapping("/departments")
@@ -30,6 +33,14 @@ public class OrganizationController {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         List<DepartmentDTO> departments = departmentMapper.findAllByCompanyId(companyId);
         return ResponseEntity.ok(ApiResponse.success(departments));
+    }
+
+    @GetMapping("/designations")
+    @Operation(summary = "Get all active designations for the organization")
+    public ResponseEntity<ApiResponse<List<DesignationDTO>>> getDesignations(@CurrentUser UserPrincipal currentUser) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        List<DesignationDTO> designations = designationMapper.findAllByCompanyId(companyId);
+        return ResponseEntity.ok(ApiResponse.success(designations));
     }
 
     @GetMapping("/companies")
