@@ -43,11 +43,11 @@ spring:
     out-of-order: true
     clean-disabled: true
 
-  # ── Mail (adapter — configure per environment) ──
+  # ── Mail (Brevo SMTP) ──
   mail:
-    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    host: ${SPRING_MAIL_HOST:smtp-relay.brevo.com}
     port: ${SPRING_MAIL_PORT:587}
-    username: ${SPRING_MAIL_USERNAME:tech.priyex@gmail.com}
+    username: ${SPRING_MAIL_USERNAME:be28de001@smtp-brevo.com}
     password: ${SPRING_MAIL_PASSWORD:}
     from: ${SPRING_MAIL_FROM:tech.priyex@gmail.com}
     properties:
