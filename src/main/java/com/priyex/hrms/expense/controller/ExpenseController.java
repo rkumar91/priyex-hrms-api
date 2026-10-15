@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/api/v1/expenses")
-@RequiredArgsConstructor
 @Tag(name = "Expense Claims Management", description = "Endpoints for submitting, auditing, approving, and reimbursing corporate employee expenses")
 public class ExpenseController {
 
