@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════
 # Stage 1: Build the Spring Boot application
 # ═══════════════════════════════════════════════════════
-FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9-eclipse-temurin-25-alpine AS builder
 WORKDIR /app
 
 # Cache dependencies
@@ -15,7 +15,7 @@ RUN mvn clean package -DskipTests -B
 # ═══════════════════════════════════════════════════════
 # Stage 2: Minimal Production Runtime
 # ═══════════════════════════════════════════════════════
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Create a non-root system user for security
