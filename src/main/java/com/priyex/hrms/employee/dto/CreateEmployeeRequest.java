@@ -29,6 +29,7 @@ public class CreateEmployeeRequest {
     private Long departmentId;
     private Long designationId;
     private Long branchId;
+    private Long reportingManagerId;
 
     private String employmentType = "FULL_TIME";
 

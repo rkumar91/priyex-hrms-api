@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.expense.mapper.ExpenseMapper">
+
+    <resultMap id="ExpenseResultMap" type="com.priyex.hrms.expense.model.ExpenseClaim">
+        <id property="id" column="id"/>
+        <result property="claimNumber" column="claim_number"/>
+        <result property="companyId" column="company_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="department" column="department_name"/>
+        <result property="category" column="category"/>
+        <result property="merchant" column="merchant"/>
+        <result property="amount" column="amount"/>
+        <result property="currency" column="currency"/>
+        <result property="expenseDate" column="expense_date"/>
+        <result property="submittedAt" column="submitted_at"/>
+        <result property="description" column="description"/>
+        <result property="projectCode" column="project_code"/>
+        <result property="gstin" column="gstin"/>
+        <result property="receiptName" column="receipt_name"/>
+        <result property="receiptUrl" column="receipt_url"/>
+        <result property="status" column="status"/>
+        <result property="managerId" column="manager_id"/>
+        <result property="managerName" column="manager_name"/>
+        <result property="managerComment" column="manager_comment"/>
+        <result property="managerApprovedAt" column="manager_approved_at"/>
+        <result property="hrComment" column="hr_comment"/>
+        <result property="hrApprovedBy" column="hr_approved_by"/>
+        <result property="hrApprovedAt" column="hr_approved_at"/>
+        <result property="approverRemarks" column="approver_remarks"/>
+        <result property="reimbursedDate" column="reimbursed_date"/>
+        <result property="reimbursementRef" column="reimbursement_ref"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="ExpenseSelectFields">
+        ec.*,
+        TRIM(e.first_name || ' ' || COALESCE(e.last_name, '')) AS employee_name,
+        d.name AS department_name,
+        TRIM(mgr.first_name || ' ' || COALESCE(mgr.last_name, '')) AS manager_name,
+        COALESCE(ec.hr_comment, ec.manager_comment) AS approver_remarks
+    </sql>
+
+    <select id="findAll" resultMap="ExpenseResultMap">
+        SELECT <include refid="ExpenseSelectFields"/>
+        FROM expense_claims ec
+        LEFT JOIN employees e ON e.id = ec.employee_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN employees mgr ON mgr.id = ec.manager_id
+        WHERE ec.company_id = #{companyId}
+        <if test="status != null and status != '' and status != 'ALL'">
+            AND ec.status = #{status}
+        </if>
+        <if test="category != null and category != '' and category != 'ALL'">
+            AND ec.category = #{category}
+        </if>
+        ORDER BY ec.id DESC
+    </select>
+
+    <select id="findByManagerEmployeeId" resultMap="ExpenseResultMap">
+        SELECT <include refid="ExpenseSelectFields"/>
+        FROM expense_claims ec
+        LEFT JOIN employees e ON e.id = ec.employee_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN employees mgr ON mgr.id = ec.manager_id
+        WHERE ec.company_id = #{companyId}
+          AND (ec.manager_id = #{managerEmployeeId} OR e.reporting_manager_id = #{managerEmployeeId})
+        ORDER BY ec.id DESC
+    </select>
+
+    <select id="findByEmployeeId" resultMap="ExpenseResultMap">
+        SELECT <include refid="ExpenseSelectFields"/>
+        FROM expense_claims ec
+        LEFT JOIN employees e ON e.id = ec.employee_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN employees mgr ON mgr.id = ec.manager_id
+        WHERE ec.company_id = #{companyId} AND ec.employee_id = #{employeeId}
+        ORDER BY ec.id DESC
+    </select>
+
+    <select id="findById" resultMap="ExpenseResultMap">
+        SELECT <include refid="ExpenseSelectFields"/>
+        FROM expense_claims ec
+        LEFT JOIN employees e ON e.id = ec.employee_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN employees mgr ON mgr.id = ec.manager_id
+        WHERE ec.id = #{id} AND ec.company_id = #{companyId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO expense_claims (
+            claim_number, company_id, employee_id, category, merchant, amount, currency,
+            expense_date, submitted_at, description, project_code, gstin, receipt_name, receipt_url,
+            status, manager_id
+        ) VALUES (
+            #{claimNumber}, #{companyId}, #{employeeId}, #{category}, #{merchant}, #{amount}, #{currency},
+            #{expenseDate}, #{submittedAt}, #{description}, #{projectCode}, #{gstin}, #{receiptName}, #{receiptUrl},
+            #{status}, #{managerId}
+        )
+    </insert>
+
+    <update id="updateManagerDecision">
+        UPDATE expense_claims
+        SET status = #{status},
+            manager_comment = #{comment},
+            manager_id = #{managerId},
+            manager_approved_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <update id="updateHrDecision">
+        UPDATE expense_claims
+        SET status = #{status},
+            hr_comment = #{comment},
+            hr_approved_by = #{hrUserId},
+            hr_approved_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <update id="updateReimbursed">
+        UPDATE expense_claims
+        SET status = 'REIMBURSED',
+            reimbursed_date = CURRENT_DATE,
+            reimbursement_ref = #{ref},
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+</mapper>

@@ -22,7 +22,14 @@ public class LeaveRequest {
     private LocalDate endDate;
     private Integer totalDays;
     private String reason;
-    private String status; // PENDING, APPROVED, REJECTED
+    private String status; // PENDING_MANAGER, PENDING_HR, APPROVED, REJECTED_MANAGER, REJECTED_HR, CANCELLED
+    private Long managerId;
+    private String managerName;
+    private String managerComment;
+    private Instant managerApprovedAt;
+    private String hrComment;
+    private Long hrApprovedBy;
+    private Instant hrApprovedAt;
     private String approverComment;
     private Long approvedBy;
     private Instant approvedAt;

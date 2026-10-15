@@ -18,6 +18,8 @@ public interface EmployeeService {
 
     Employee updateEmployee(Long companyId, Long id, CreateEmployeeRequest request);
 
+    void updateReportingManager(Long companyId, Long employeeId, Long reportingManagerId);
+
     void deleteEmployee(Long companyId, Long id);
 
     String exportEmployeesCsv(Long companyId);

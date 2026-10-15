@@ -78,6 +78,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .departmentId(req.getDepartmentId())
                 .designationId(req.getDesignationId())
                 .branchId(req.getBranchId())
+                .reportingManagerId(req.getReportingManagerId())
                 .employmentType(req.getEmploymentType() != null ? req.getEmploymentType() : "FULL_TIME")
                 .joiningDate(req.getJoiningDate())
                 .status(req.getStatus() != null ? req.getStatus() : "ACTIVE")
@@ -132,6 +133,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         existing.setPersonalPhone(req.getPersonalPhone());
         existing.setDepartmentId(req.getDepartmentId());
         existing.setDesignationId(req.getDesignationId());
+        existing.setReportingManagerId(req.getReportingManagerId());
         existing.setEmploymentType(req.getEmploymentType());
         existing.setStatus(req.getStatus());
         existing.setAddressLine1(req.getAddressLine1());
@@ -172,6 +174,15 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         employeeMapper.update(existing);
         return getEmployeeById(companyId, id);
+    }
+
+    @Override
+    @Transactional
+    public void updateReportingManager(Long companyId, Long employeeId, Long reportingManagerId) {
+        if (employeeId.equals(reportingManagerId)) {
+            throw new IllegalArgumentException("An employee cannot report to themselves");
+        }
+        employeeMapper.updateReportingManager(employeeId, companyId, reportingManagerId);
     }
 
     @Override

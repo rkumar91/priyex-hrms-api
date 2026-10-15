@@ -137,6 +137,24 @@ public class EmployeeController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Employee updated successfully"));
     }
 
+    @PutMapping("/{id}/reporting-manager")
+    @PreAuthorize("hasAuthority('emp.edit') or hasRole('SUPER_ADMIN') or hasRole('HR_ADMIN')")
+    @Operation(summary = "Assign or update employee reporting manager")
+    public ResponseEntity<ApiResponse<Void>> updateReportingManager(
+            @CurrentUser UserPrincipal currentUser,
+            @PathVariable("id") Long id,
+            @RequestBody java.util.Map<String, Object> payload
+    ) {
+        Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
+        Object mgrVal = payload.get("reportingManagerId");
+        Long managerId = null;
+        if (mgrVal != null && !mgrVal.toString().isBlank()) {
+            managerId = Long.valueOf(mgrVal.toString());
+        }
+        employeeService.updateReportingManager(companyId, id, managerId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Reporting manager updated successfully"));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('emp.manage_lifecycle') or hasRole('SUPER_ADMIN')")
     @Operation(summary = "Deactivate employee")

@@ -12,6 +12,10 @@ public interface LeaveMapper {
 
     List<LeaveRequest> findAllByCompanyId(@Param("companyId") Long companyId);
 
+    List<LeaveRequest> findByManagerEmployeeId(@Param("managerEmployeeId") Long managerEmployeeId, @Param("companyId") Long companyId);
+
+    List<LeaveRequest> findByEmployeeId(@Param("employeeId") Long employeeId, @Param("companyId") Long companyId);
+
     Optional<LeaveRequest> findById(@Param("id") Long id, @Param("companyId") Long companyId);
 
     int insert(LeaveRequest leaveRequest);
@@ -22,5 +26,21 @@ public interface LeaveMapper {
             @Param("status") String status,
             @Param("approverComment") String approverComment,
             @Param("approvedBy") Long approvedBy
+    );
+
+    int updateManagerDecision(
+            @Param("id") Long id,
+            @Param("companyId") Long companyId,
+            @Param("status") String status,
+            @Param("comment") String comment,
+            @Param("managerId") Long managerId
+    );
+
+    int updateHrDecision(
+            @Param("id") Long id,
+            @Param("companyId") Long companyId,
+            @Param("status") String status,
+            @Param("comment") String comment,
+            @Param("hrUserId") Long hrUserId
     );
 }

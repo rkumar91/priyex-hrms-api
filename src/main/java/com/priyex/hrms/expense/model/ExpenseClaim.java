@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -31,10 +31,17 @@ public class ExpenseClaim {
     private String gstin;
     private String receiptName;
     private String receiptUrl;
-    private String status; // PENDING, APPROVED, REJECTED, REIMBURSED
+    private String status; // PENDING_MANAGER, PENDING_HR, APPROVED, REJECTED_MANAGER, REJECTED_HR, REIMBURSED
+    private Long managerId;
+    private String managerName;
+    private String managerComment;
+    private Instant managerApprovedAt;
+    private String hrComment;
+    private Long hrApprovedBy;
+    private Instant hrApprovedAt;
     private String approverRemarks;
     private LocalDate reimbursedDate;
     private String reimbursementRef;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

@@ -55,5 +55,7 @@ public interface EmployeeMapper {
 
     int updateEmployeeCtc(@Param("id") Long id, @Param("companyId") Long companyId, @Param("annualCtc") java.math.BigDecimal annualCtc);
 
+    int updateReportingManager(@Param("id") Long id, @Param("companyId") Long companyId, @Param("reportingManagerId") Long reportingManagerId);
+
     int linkUserId(@Param("employeeId") Long employeeId, @Param("userId") Long userId, @Param("companyId") Long companyId);
 }

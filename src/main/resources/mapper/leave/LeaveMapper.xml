@@ -14,6 +14,13 @@
         <result property="totalDays" column="total_days"/>
         <result property="reason" column="reason"/>
         <result property="status" column="status"/>
+        <result property="managerId" column="manager_id"/>
+        <result property="managerName" column="manager_name"/>
+        <result property="managerComment" column="manager_comment"/>
+        <result property="managerApprovedAt" column="manager_approved_at"/>
+        <result property="hrComment" column="hr_comment"/>
+        <result property="hrApprovedBy" column="hr_approved_by"/>
+        <result property="hrApprovedAt" column="hr_approved_at"/>
         <result property="approverComment" column="approver_comment"/>
         <result property="approvedBy" column="approved_by"/>
         <result property="approvedAt" column="approved_at"/>
@@ -22,25 +29,54 @@
     </resultMap>
 
     <select id="findAllByCompanyId" resultMap="LeaveResultMap">
-        SELECT lr.*, (e.first_name || ' ' || e.last_name) AS employee_name
+        SELECT lr.*, 
+               TRIM(e.first_name || ' ' || COALESCE(e.last_name, '')) AS employee_name,
+               TRIM(mgr.first_name || ' ' || COALESCE(mgr.last_name, '')) AS manager_name
         FROM leave_requests lr
         LEFT JOIN employees e ON e.id = lr.employee_id
+        LEFT JOIN employees mgr ON mgr.id = lr.manager_id
         WHERE lr.company_id = #{companyId}
         ORDER BY lr.id DESC
     </select>
 
-    <select id="findById" resultMap="LeaveResultMap">
-        SELECT lr.*, (e.first_name || ' ' || e.last_name) AS employee_name
+    <select id="findByManagerEmployeeId" resultMap="LeaveResultMap">
+        SELECT lr.*, 
+               TRIM(e.first_name || ' ' || COALESCE(e.last_name, '')) AS employee_name,
+               TRIM(mgr.first_name || ' ' || COALESCE(mgr.last_name, '')) AS manager_name
         FROM leave_requests lr
         LEFT JOIN employees e ON e.id = lr.employee_id
+        LEFT JOIN employees mgr ON mgr.id = lr.manager_id
+        WHERE lr.company_id = #{companyId}
+          AND (lr.manager_id = #{managerEmployeeId} OR e.reporting_manager_id = #{managerEmployeeId})
+        ORDER BY lr.id DESC
+    </select>
+
+    <select id="findByEmployeeId" resultMap="LeaveResultMap">
+        SELECT lr.*, 
+               TRIM(e.first_name || ' ' || COALESCE(e.last_name, '')) AS employee_name,
+               TRIM(mgr.first_name || ' ' || COALESCE(mgr.last_name, '')) AS manager_name
+        FROM leave_requests lr
+        LEFT JOIN employees e ON e.id = lr.employee_id
+        LEFT JOIN employees mgr ON mgr.id = lr.manager_id
+        WHERE lr.company_id = #{companyId} AND lr.employee_id = #{employeeId}
+        ORDER BY lr.id DESC
+    </select>
+
+    <select id="findById" resultMap="LeaveResultMap">
+        SELECT lr.*, 
+               TRIM(e.first_name || ' ' || COALESCE(e.last_name, '')) AS employee_name,
+               TRIM(mgr.first_name || ' ' || COALESCE(mgr.last_name, '')) AS manager_name
+        FROM leave_requests lr
+        LEFT JOIN employees e ON e.id = lr.employee_id
+        LEFT JOIN employees mgr ON mgr.id = lr.manager_id
         WHERE lr.id = #{id} AND lr.company_id = #{companyId}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO leave_requests (
-            company_id, employee_id, leave_type, start_date, end_date, total_days, reason, status
+            company_id, employee_id, leave_type, start_date, end_date, total_days, reason, status, manager_id
         ) VALUES (
-            #{companyId}, #{employeeId}, #{leaveType}, #{startDate}, #{endDate}, #{totalDays}, #{reason}, #{status}
+            #{companyId}, #{employeeId}, #{leaveType}, #{startDate}, #{endDate}, #{totalDays}, #{reason}, #{status}, #{managerId}
         )
     </insert>
 
@@ -49,6 +85,29 @@
         SET status = #{status},
             approver_comment = #{approverComment},
             approved_by = #{approvedBy},
+            approved_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <update id="updateManagerDecision">
+        UPDATE leave_requests
+        SET status = #{status},
+            manager_comment = #{comment},
+            manager_id = #{managerId},
+            manager_approved_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <update id="updateHrDecision">
+        UPDATE leave_requests
+        SET status = #{status},
+            hr_comment = #{comment},
+            hr_approved_by = #{hrUserId},
+            hr_approved_at = NOW(),
+            approver_comment = #{comment},
+            approved_by = #{hrUserId},
             approved_at = NOW(),
             updated_at = NOW()
         WHERE id = #{id} AND company_id = #{companyId}
