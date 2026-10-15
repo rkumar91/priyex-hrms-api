@@ -5,8 +5,6 @@ import com.priyex.hrms.employee.mapper.EmployeeMapper;
 import com.priyex.hrms.employee.model.Employee;
 import com.priyex.hrms.organization.dto.CompanyDto;
 import com.priyex.hrms.organization.mapper.CompanyMapper;
-import com.priyex.hrms.payroll.mapper.PayrollMapper;
-import com.priyex.hrms.payroll.model.EmployeePayslip;
 import com.priyex.hrms.tax.dto.*;
 import com.priyex.hrms.tax.mapper.InvestmentDeclarationMapper;
 import com.priyex.hrms.tax.model.InvestmentDeclaration;
@@ -31,7 +29,6 @@ public class TaxCalculationServiceImpl implements TaxCalculationService {
     private final InvestmentDeclarationMapper declarationMapper;
     private final EmployeeMapper employeeMapper;
     private final CompanyMapper companyMapper;
-    private final PayrollMapper payrollMapper;
 
     private static final String DEFAULT_FY = "2026-2027";
     private static final String DEFAULT_AY = "2027-2028";

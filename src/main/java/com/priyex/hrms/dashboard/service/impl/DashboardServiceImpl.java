@@ -93,7 +93,7 @@ public class DashboardServiceImpl implements DashboardService {
                     BigDecimal inLakhs = grossEarnings.divide(new BigDecimal("100000"), 1, RoundingMode.HALF_UP);
                     payrollFormatted = inLakhs.toPlainString() + " L";
                 } else {
-                    payrollFormatted = NumberFormat.getCurrencyInstance(new Locale("en", "IN")).format(grossEarnings);
+                    payrollFormatted = NumberFormat.getCurrencyInstance(Locale.of("en", "IN")).format(grossEarnings);
                 }
             }
         } catch (Exception e) {
@@ -129,7 +129,7 @@ public class DashboardServiceImpl implements DashboardService {
                     EmployeePayslip latest = payslips.get(0);
                     if (latest.getNetSalary() != null) {
                         myLatestNetPay = latest.getNetSalary();
-                        myLatestNetPayFormatted = NumberFormat.getNumberInstance(new Locale("en", "IN")).format(myLatestNetPay);
+                        myLatestNetPayFormatted = NumberFormat.getNumberInstance(Locale.of("en", "IN")).format(myLatestNetPay);
                     }
                 }
             } catch (Exception e) {

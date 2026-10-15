@@ -21,14 +21,14 @@ import java.time.Instant;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/notifications")
+@RequestMapping("/api/v1/notifications/broadcasts")
 @RequiredArgsConstructor
 @Tag(name = "Broadcast Notifications & Announcements", description = "Endpoints for org-wide announcements visible across all users")
 public class NotificationController {
 
     private final AnnouncementMapper announcementMapper;
 
-    @GetMapping("/broadcasts")
+    @GetMapping
     @Operation(summary = "Get currently live announcements (within their schedule window) for the current organization")
     public ResponseEntity<ApiResponse<List<Announcement>>> getBroadcasts(@CurrentUser UserPrincipal currentUser) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
@@ -37,7 +37,7 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
-    @GetMapping("/broadcasts/manage")
+    @GetMapping("/manage")
     @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN')")
     @Operation(summary = "List all announcements (scheduled, live and expired) for management (HR/Admin)")
     public ResponseEntity<ApiResponse<List<Announcement>>> getAllForManagement(@CurrentUser UserPrincipal currentUser) {
@@ -45,7 +45,7 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success(announcementMapper.findAllForAdmin(companyId)));
     }
 
-    @PostMapping("/broadcasts")
+    @PostMapping
     @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN')")
     @Operation(summary = "Publish a new organization-wide announcement")
     public ResponseEntity<ApiResponse<Announcement>> createBroadcast(
@@ -74,7 +74,7 @@ public class NotificationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(announcement, "Announcement broadcasted successfully"));
     }
 
-    @PutMapping("/broadcasts/{id}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN')")
     @Operation(summary = "Update an announcement's content and schedule window (HR/Admin)")
     public ResponseEntity<ApiResponse<Announcement>> updateBroadcast(
@@ -105,7 +105,7 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Announcement updated successfully"));
     }
 
-    @PutMapping("/broadcasts/{id}/end")
+    @PutMapping("/{id}/end")
     @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN')")
     @Operation(summary = "End an announcement immediately by closing its display window now (HR/Admin)")
     public ResponseEntity<ApiResponse<Void>> endBroadcastNow(
@@ -127,7 +127,7 @@ public class NotificationController {
         }
     }
 
-    @PutMapping("/broadcasts/{id}/read")
+    @PutMapping("/{id}/read")
     @Operation(summary = "Mark an announcement as read / acknowledged by the current user")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
             @CurrentUser UserPrincipal currentUser,
@@ -138,7 +138,7 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success(null, "Announcement marked as read"));
     }
 
-    @PutMapping("/broadcasts/read-all")
+    @PutMapping("/read-all")
     @Operation(summary = "Mark all announcements as read for the current user")
     public ResponseEntity<ApiResponse<Void>> markAllAsRead(@CurrentUser UserPrincipal currentUser) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
@@ -147,7 +147,7 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success(null, "All announcements marked as read"));
     }
 
-    @DeleteMapping("/broadcasts/{id}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('HR_ADMIN', 'ADMIN', 'SUPER_ADMIN')")
     @Operation(summary = "Delete an announcement (HR/Admin)")
     public ResponseEntity<ApiResponse<Void>> deleteBroadcast(
