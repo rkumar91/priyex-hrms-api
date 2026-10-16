@@ -23,7 +23,7 @@ public class EmailServiceImpl implements EmailService {
     private String fromEmail;
 
     @Override
-    public void sendOnboardingInvite(String recipientEmail, String workEmail, String recipientName, String tempPassword, String loginUrl) {
+    public boolean sendOnboardingInvite(String recipientEmail, String workEmail, String recipientName, String tempPassword, String loginUrl) {
         String subject = "Welcome to Priyex People — Your Onboarding Credentials";
         String body = String.format("""
             Hello %s,
@@ -74,10 +74,11 @@ public class EmailServiceImpl implements EmailService {
                 .errorMessage(errorMessage)
                 .build();
         emailLogMapper.insert(deliveryLog);
+        return sentReal;
     }
 
     @Override
-    public void sendOnboardingApprovalNotification(String recipientEmail, String recipientName) {
+    public boolean sendOnboardingApprovalNotification(String recipientEmail, String recipientName) {
         String subject = "Congratulations! Your Onboarding Verification is Complete";
         String body = String.format("""
             Hello %s,
@@ -122,5 +123,6 @@ public class EmailServiceImpl implements EmailService {
                 .errorMessage(errorMessage)
                 .build();
         emailLogMapper.insert(deliveryLog);
+        return sentReal;
     }
 }

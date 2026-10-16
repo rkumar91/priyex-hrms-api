@@ -20,4 +20,5 @@ public class InitiateOnboardingResponse {
     private String inviteUrl;
     private String status;
     private String message;
+    private Boolean emailSent;
 }

@@ -121,7 +121,7 @@ public class OnboardingServiceImpl implements OnboardingService {
         String fullName = req.getFirstName().trim() + " " + req.getLastName().trim();
         String recipientEmail = (alternativeEmail != null && !alternativeEmail.isBlank()) ? alternativeEmail : workEmail;
 
-        emailService.sendOnboardingInvite(recipientEmail, workEmail, fullName, tempPassword, loginUrl);
+        boolean emailSent = emailService.sendOnboardingInvite(recipientEmail, workEmail, fullName, tempPassword, loginUrl);
 
         return InitiateOnboardingResponse.builder()
                 .employeeId(emp.getId())
@@ -133,7 +133,10 @@ public class OnboardingServiceImpl implements OnboardingService {
                 .tempPassword(tempPassword)
                 .inviteUrl(loginUrl)
                 .status("ONBOARDING")
-                .message("Onboarding initiated and invitation email dispatched to " + recipientEmail + " from tech.priyex@gmail.com")
+                .emailSent(emailSent)
+                .message(emailSent
+                        ? "Onboarding initiated and invitation email dispatched to " + recipientEmail + " from tech.priyex@gmail.com"
+                        : "Onboarding initiated. Live email could not be delivered; please share credentials below.")
                 .build();
     }
 

@@ -43,12 +43,12 @@ spring:
     out-of-order: true
     clean-disabled: true
 
-  # ── Mail (Brevo SMTP) ──
+  # ── Mail (Gmail SMTP) ──
   mail:
-    host: ${SPRING_MAIL_HOST:smtp-relay.brevo.com}
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
     port: ${SPRING_MAIL_PORT:587}
-    username: ${SPRING_MAIL_USERNAME:be28de001@smtp-brevo.com}
-    password: ${SPRING_MAIL_PASSWORD:}
+    username: ${SPRING_MAIL_USERNAME:tech.priyex@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:njifpfmtidynvvud}
     from: ${SPRING_MAIL_FROM:tech.priyex@gmail.com}
     properties:
       mail:
