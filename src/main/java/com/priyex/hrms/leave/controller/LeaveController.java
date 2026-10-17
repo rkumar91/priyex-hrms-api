@@ -1,5 +1,6 @@
 package com.priyex.hrms.leave.controller;
 
+import com.priyex.hrms.common.exception.BadRequestException;
 import com.priyex.hrms.common.exception.ResourceNotFoundException;
 import com.priyex.hrms.common.response.ApiResponse;
 import com.priyex.hrms.employee.mapper.EmployeeMapper;
@@ -10,7 +11,6 @@ import com.priyex.hrms.security.CurrentUser;
 import com.priyex.hrms.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,12 +22,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/leaves")
-@RequiredArgsConstructor
 @Tag(name = "Leave Management", description = "Endpoints for applying, listing, multi-tier approving (Manager -> HR), and rejecting leave applications")
 public class LeaveController {
 
     private final LeaveMapper leaveMapper;
     private final EmployeeMapper employeeMapper;
+
+    public LeaveController(LeaveMapper leaveMapper, EmployeeMapper employeeMapper) {
+        super();
+        this.leaveMapper = leaveMapper;
+        this.employeeMapper = employeeMapper;
+    }
 
     @GetMapping
     @Operation(summary = "Get all leave applications for current company")
@@ -79,13 +84,35 @@ public class LeaveController {
             request.setEmployeeId(actorEmpId != null ? actorEmpId : 1L);
         }
 
-        // Calculate days
-        if (request.getStartDate() != null && request.getEndDate() != null) {
-            long days = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
-            request.setTotalDays((int) Math.max(1, days));
-        } else {
-            request.setTotalDays(1);
+        if (request.getStartDate() == null || request.getEndDate() == null) {
+            throw new BadRequestException("Leave start date and end date are required.");
         }
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            throw new BadRequestException("Leave start date cannot be after end date.");
+        }
+
+        // Prevent duplicate or overlapping active leaves for the same employee
+        List<LeaveRequest> existingLeaves = leaveMapper.findByEmployeeId(request.getEmployeeId(), companyId);
+        if (existingLeaves != null) {
+            for (LeaveRequest existing : existingLeaves) {
+                if ("REJECTED".equalsIgnoreCase(existing.getStatus()) || "CANCELLED".equalsIgnoreCase(existing.getStatus())) {
+                    continue;
+                }
+                if (existing.getStartDate() != null && existing.getEndDate() != null) {
+                    boolean overlaps = !request.getStartDate().isAfter(existing.getEndDate()) &&
+                                       !request.getEndDate().isBefore(existing.getStartDate());
+                    if (overlaps) {
+                        throw new BadRequestException("You already have an active leave application (" +
+                                existing.getLeaveType() + " from " + existing.getStartDate() + " to " + existing.getEndDate() +
+                                " [" + existing.getStatus() + "]). Overlapping or duplicate leave entries are not permitted.");
+                    }
+                }
+            }
+        }
+
+        // Calculate days
+        long days = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
+        request.setTotalDays((int) Math.max(1, days));
 
         // Resolve reporting manager
         Employee applicant = employeeMapper.findById(request.getEmployeeId(), companyId).orElse(null);
