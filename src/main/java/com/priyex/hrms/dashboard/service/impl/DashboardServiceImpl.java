@@ -29,16 +29,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-@Slf4j
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
-@RequiredArgsConstructor
 public class DashboardServiceImpl implements DashboardService {
+
+    private static final Logger log = LoggerFactory.getLogger(DashboardServiceImpl.class);
 
     private final EmployeeMapper employeeMapper;
     private final LeaveMapper leaveMapper;
     private final DepartmentMapper departmentMapper;
     private final PayrollMapper payrollMapper;
     private final PayrollService payrollService;
+
+    public DashboardServiceImpl(
+            EmployeeMapper employeeMapper,
+            LeaveMapper leaveMapper,
+            DepartmentMapper departmentMapper,
+            PayrollMapper payrollMapper,
+            PayrollService payrollService
+    ) {
+        super();
+        this.employeeMapper = employeeMapper;
+        this.leaveMapper = leaveMapper;
+        this.departmentMapper = departmentMapper;
+        this.payrollMapper = payrollMapper;
+        this.payrollService = payrollService;
+    }
 
     @Override
     public DashboardStatsResponse getDashboardStats(Long companyId, UserPrincipal currentUser) {
@@ -139,54 +157,117 @@ public class DashboardServiceImpl implements DashboardService {
 
         // 6. Real-time Activities List
         List<DashboardActivityDto> activities = new ArrayList<>();
+        boolean isManagerOrAdmin = currentUser != null && currentUser.hasAnyRole("ADMIN", "SUPER_ADMIN", "HR_ADMIN", "MANAGER");
 
-        // Add recent employees
-        List<Employee> recentEmployees = employeeMapper.searchEmployees(companyId, null, null, null, 0, 3);
-        if (recentEmployees != null) {
-            for (Employee emp : recentEmployees) {
-                activities.add(DashboardActivityDto.builder()
-                        .id((long) (activities.size() + 1))
-                        .type("Employee Onboarded")
-                        .title(emp.getFirstName() + " " + emp.getLastName() + " enrolled (" + emp.getEmployeeCode() + ")")
-                        .time(emp.getCreatedAt() != null ? formatRelativeTime(emp.getCreatedAt()) : "Recently")
-                        .icon("UserPlus")
-                        .iconColor("text-emerald-600 bg-emerald-50")
-                        .build());
-            }
-        }
-
-        // Add recent leave requests
-        if (allLeaves != null) {
-            allLeaves.stream().limit(3).forEach(lr -> {
-                boolean isApproved = "APPROVED".equalsIgnoreCase(lr.getStatus());
-                activities.add(DashboardActivityDto.builder()
-                        .id((long) (activities.size() + 1))
-                        .type(isApproved ? "Leave Approved" : "Leave Requested")
-                        .title((lr.getEmployeeName() != null ? lr.getEmployeeName() : "Employee") + " - " + lr.getLeaveType() + " (" + lr.getTotalDays() + " Days)")
-                        .time(lr.getCreatedAt() != null ? formatRelativeTime(lr.getCreatedAt()) : "Recently")
-                        .icon(isApproved ? "CheckCircle2" : "Clock")
-                        .iconColor(isApproved ? "text-teal-600 bg-teal-50" : "text-amber-600 bg-amber-50")
-                        .build());
-            });
-        }
-
-        // Add recent payroll runs
-        try {
-            List<PayrollRun> runs = payrollMapper.findRunsByCompanyId(companyId);
-            if (runs != null) {
-                runs.stream().limit(2).forEach(pr -> {
+        if (isManagerOrAdmin) {
+            // Admin / HR: Live system-wide activities
+            // Add recent employees
+            List<Employee> recentEmployees = employeeMapper.searchEmployees(companyId, null, null, null, 0, 3);
+            if (recentEmployees != null) {
+                for (Employee emp : recentEmployees) {
                     activities.add(DashboardActivityDto.builder()
                             .id((long) (activities.size() + 1))
-                            .type("Payroll Run")
-                            .title("Payroll Run for " + pr.getTotalEmployees() + " employees (" + pr.getStatus() + ")")
-                            .time(pr.getCreatedAt() != null ? formatRelativeTime(pr.getCreatedAt()) : "Recently")
-                            .icon("FileCheck")
-                            .iconColor("text-cyan-600 bg-cyan-50")
+                            .type("Employee Onboarded")
+                            .title(emp.getFirstName() + " " + emp.getLastName() + " enrolled (" + emp.getEmployeeCode() + ")")
+                            .time(emp.getCreatedAt() != null ? formatRelativeTime(emp.getCreatedAt()) : "Recently")
+                            .icon("UserPlus")
+                            .iconColor("text-emerald-600 bg-emerald-50")
+                            .build());
+                }
+            }
+
+            // Add recent leave requests
+            if (allLeaves != null) {
+                allLeaves.stream().limit(3).forEach(lr -> {
+                    boolean isApproved = "APPROVED".equalsIgnoreCase(lr.getStatus());
+                    activities.add(DashboardActivityDto.builder()
+                            .id((long) (activities.size() + 1))
+                            .type(isApproved ? "Leave Approved" : "Leave Requested")
+                            .title((lr.getEmployeeName() != null ? lr.getEmployeeName() : "Employee") + " - " + lr.getLeaveType() + " (" + lr.getTotalDays() + " Days)")
+                            .time(lr.getCreatedAt() != null ? formatRelativeTime(lr.getCreatedAt()) : "Recently")
+                            .icon(isApproved ? "CheckCircle2" : "Clock")
+                            .iconColor(isApproved ? "text-teal-600 bg-teal-50" : "text-amber-600 bg-amber-50")
                             .build());
                 });
             }
-        } catch (Exception e) {
-            log.warn("Could not fetch payroll runs for activities", e);
+
+            // Add recent payroll runs
+            try {
+                List<PayrollRun> runs = payrollMapper.findRunsByCompanyId(companyId);
+                if (runs != null) {
+                    runs.stream().limit(2).forEach(pr -> {
+                        activities.add(DashboardActivityDto.builder()
+                                .id((long) (activities.size() + 1))
+                                .type("Payroll Run")
+                                .title("Payroll Run for " + pr.getTotalEmployees() + " employees (" + pr.getStatus() + ")")
+                                .time(pr.getCreatedAt() != null ? formatRelativeTime(pr.getCreatedAt()) : "Recently")
+                                .icon("FileCheck")
+                                .iconColor("text-cyan-600 bg-cyan-50")
+                                .build());
+                    });
+                }
+            } catch (Exception e) {
+                log.warn("Could not fetch payroll runs for activities", e);
+            }
+        } else {
+            // Employee Self-Service: strictly own activities
+            if (employeeId != null) {
+                // User's own leave requests
+                if (allLeaves != null) {
+                    allLeaves.stream()
+                            .filter(l -> employeeId.equals(l.getEmployeeId()))
+                            .limit(3)
+                            .forEach(lr -> {
+                                boolean isApproved = "APPROVED".equalsIgnoreCase(lr.getStatus());
+                                boolean isRejected = "REJECTED".equalsIgnoreCase(lr.getStatus());
+                                String type = isApproved ? "Leave Approved" : (isRejected ? "Leave Rejected" : "Leave Requested");
+                                activities.add(DashboardActivityDto.builder()
+                                        .id((long) (activities.size() + 1))
+                                        .type(type)
+                                        .title(lr.getLeaveType() + " (" + lr.getTotalDays() + " Days) - " + lr.getStatus())
+                                        .time(lr.getCreatedAt() != null ? formatRelativeTime(lr.getCreatedAt()) : "Recently")
+                                        .icon(isApproved ? "CheckCircle2" : (isRejected ? "AlertTriangle" : "Clock"))
+                                        .iconColor(isApproved ? "text-teal-600 bg-teal-50" : (isRejected ? "text-rose-600 bg-rose-50" : "text-amber-600 bg-amber-50"))
+                                        .build());
+                            });
+                }
+
+                // User's own payslips
+                try {
+                    List<EmployeePayslip> payslips = payrollMapper.findPayslipsByEmployeeId(employeeId);
+                    if (payslips != null && !payslips.isEmpty()) {
+                        payslips.stream().limit(2).forEach(ps -> {
+                            String period = ps.getPayPeriod() != null ? ps.getPayPeriod() : (ps.getPayrollMonth() != null ? ps.getPayrollMonth() + "/" + ps.getPayrollYear() : "Monthly");
+                            activities.add(DashboardActivityDto.builder()
+                                    .id((long) (activities.size() + 1))
+                                    .type("Payslip Released")
+                                    .title("Monthly Salary Statement (" + period + ") ready for download")
+                                    .time(ps.getCreatedAt() != null ? formatRelativeTime(ps.getCreatedAt()) : "Recently")
+                                    .icon("FileCheck")
+                                    .iconColor("text-cyan-600 bg-cyan-50")
+                                    .build());
+                        });
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not fetch employee payslips for personal activities", e);
+                }
+
+                // User's own enrollment milestone
+                try {
+                    employeeMapper.findById(employeeId, companyId).ifPresent(emp -> {
+                        activities.add(DashboardActivityDto.builder()
+                                .id((long) (activities.size() + 1))
+                                .type("Employee Onboarded")
+                                .title(emp.getFirstName() + " " + emp.getLastName() + " enrolled (" + emp.getEmployeeCode() + ")")
+                                .time(emp.getCreatedAt() != null ? formatRelativeTime(emp.getCreatedAt()) : "Recently")
+                                .icon("UserPlus")
+                                .iconColor("text-emerald-600 bg-emerald-50")
+                                .build());
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not fetch employee enrollment for personal activities", e);
+                }
+            }
         }
 
         return DashboardStatsResponse.builder()
