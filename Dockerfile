@@ -32,5 +32,5 @@ USER appuser
 ENV PORT=8080
 EXPOSE 8080
 
-# Tuned JVM parameters for free-tier hosting (512MB RAM limits)
-ENTRYPOINT ["sh", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Xss512k -Djava.security.egd=file:/dev/./urandom -Dserver.port=${PORT:-8080} -jar app.jar"]
+# Tuned JVM parameters for free-tier hosting (512MB RAM limits) with fast cold-start
+ENTRYPOINT ["sh", "-c", "java -XX:+UseContainerSupport -XX:TieredStopAtLevel=1 -XX:MaxRAMPercentage=75.0 -Xss512k -Dspring.main.lazy-initialization=true -Djava.security.egd=file:/dev/./urandom -Dserver.port=${PORT:-8080} -jar app.jar"]

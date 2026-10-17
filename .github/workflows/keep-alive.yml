@@ -1,0 +1,28 @@
+name: Render Free Tier Keep-Alive
+
+on:
+  schedule:
+    # Runs every 12 minutes (Render sleeps after 15 minutes of inactivity)
+    - cron: '*/12 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  ping-render:
+    name: Ping Render Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping API Health Endpoint
+        run: |
+          echo "Pinging Priyex HRMS Render API..."
+          HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://priyex-hrms-api.onrender.com/api/v1/health)
+          echo "Received HTTP status: $HTTP_RESPONSE"
+          if [ "$HTTP_RESPONSE" -eq 200 ]; then
+            echo "Render instance is awake and healthy!"
+          else
+            echo "Non-200 received ($HTTP_RESPONSE). Retrying after 10 seconds..."
+            sleep 10
+            RETRY_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://priyex-hrms-api.onrender.com/api/v1/health)
+            echo "Retry HTTP status: $RETRY_CODE"
+          fi

@@ -14,6 +14,8 @@ server:
     include-exception: false
 
 spring:
+  main:
+    lazy-initialization: true
   application:
     name: priyex-hrms-api
   profiles:
