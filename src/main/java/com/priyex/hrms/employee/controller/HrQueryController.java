@@ -23,11 +23,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/hr-queries")
-@RequiredArgsConstructor
 @Tag(name = "HR Queries", description = "Endpoints for employee queries to HR, live support pool, and interactive messaging")
 public class HrQueryController {
 
     private final HrQueryService hrQueryService;
+
+    public HrQueryController(HrQueryService hrQueryService) {
+        super();
+        this.hrQueryService = hrQueryService;
+    }
 
     @GetMapping("/personnel")
     @PreAuthorize("isAuthenticated()")

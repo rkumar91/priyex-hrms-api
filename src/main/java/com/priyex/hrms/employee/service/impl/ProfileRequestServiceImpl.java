@@ -44,6 +44,19 @@ public class ProfileRequestServiceImpl implements ProfileRequestService {
         Employee employee = employeeMapper.findById(employeeId, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
 
+        // Prevent duplicate submissions if a pending request for the same update type already exists
+        List<ProfileRequest> pendingList = profileRequestMapper.findRequests(companyId, employeeId, "PENDING");
+        if (pendingList != null && !pendingList.isEmpty()) {
+            ProfileRequest existingPending = pendingList.stream()
+                    .filter(p -> p.getRequestType() != null && p.getRequestType().equalsIgnoreCase(req.getRequestType()))
+                    .findFirst()
+                    .orElse(null);
+            if (existingPending != null) {
+                throw new BadRequestException("You already have a pending change request for " +
+                        existingPending.getFieldName() + " (Request #" + existingPending.getId() + ") awaiting HR approval. Further requests cannot be submitted until your pending request is reviewed.");
+            }
+        }
+
         String currentVal = req.getCurrentValue();
         if (currentVal == null || currentVal.isBlank()) {
             if ("BANK_ACCOUNT".equalsIgnoreCase(req.getRequestType())) {

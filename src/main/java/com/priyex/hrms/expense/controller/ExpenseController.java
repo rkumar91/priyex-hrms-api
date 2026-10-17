@@ -1,5 +1,6 @@
 package com.priyex.hrms.expense.controller;
 
+import com.priyex.hrms.common.exception.BadRequestException;
 import com.priyex.hrms.common.exception.ResourceNotFoundException;
 import com.priyex.hrms.common.response.ApiResponse;
 import com.priyex.hrms.employee.mapper.EmployeeMapper;
@@ -10,7 +11,6 @@ import com.priyex.hrms.security.CurrentUser;
 import com.priyex.hrms.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,12 +22,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/expenses")
-@RequiredArgsConstructor
 @Tag(name = "Expense Claims Management", description = "Endpoints for submitting, multi-tier auditing (Manager -> HR/Finance), approving, and reimbursing corporate expenses")
 public class ExpenseController {
 
     private final ExpenseMapper expenseMapper;
     private final EmployeeMapper employeeMapper;
+
+    public ExpenseController(ExpenseMapper expenseMapper, EmployeeMapper employeeMapper) {
+        super();
+        this.expenseMapper = expenseMapper;
+        this.employeeMapper = employeeMapper;
+    }
 
     @GetMapping
     @Operation(summary = "Get all expense claims for current company")
@@ -91,6 +96,22 @@ public class ExpenseController {
         }
         if (request.getSubmittedAt() == null) {
             request.setSubmittedAt(LocalDate.now().toString());
+        }
+
+        // Prevent duplicate submissions of pending corporate expense claims
+        List<ExpenseClaim> existingClaims = expenseMapper.findByEmployeeId(request.getEmployeeId(), companyId);
+        if (existingClaims != null) {
+            for (ExpenseClaim existing : existingClaims) {
+                if ("PENDING_MANAGER".equalsIgnoreCase(existing.getStatus()) || "PENDING_HR".equalsIgnoreCase(existing.getStatus())) {
+                    boolean sameDate = request.getExpenseDate() != null && request.getExpenseDate().equals(existing.getExpenseDate());
+                    boolean sameMerchant = request.getMerchant() != null && request.getMerchant().trim().equalsIgnoreCase(existing.getMerchant() != null ? existing.getMerchant().trim() : "");
+                    boolean sameAmount = request.getAmount() != null && existing.getAmount() != null && request.getAmount().compareTo(existing.getAmount()) == 0;
+                    if (sameDate && sameMerchant && sameAmount) {
+                        throw new BadRequestException("An identical expense claim (" + existing.getClaimNumber() + " - " + existing.getMerchant() +
+                                " for ₹" + existing.getAmount() + ") is currently pending review. Duplicate expense claims cannot be submitted.");
+                    }
+                }
+            }
         }
 
         // Determine reporting manager

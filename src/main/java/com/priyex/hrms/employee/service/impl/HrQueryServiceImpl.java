@@ -15,10 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class HrQueryServiceImpl implements HrQueryService {
 
     private final HrQueryMapper hrQueryMapper;
+
+    public HrQueryServiceImpl(HrQueryMapper hrQueryMapper) {
+        super();
+        this.hrQueryMapper = hrQueryMapper;
+    }
 
     @Override
     @Transactional
