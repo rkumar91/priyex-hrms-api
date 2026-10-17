@@ -11,19 +11,32 @@ import com.priyex.hrms.employee.model.ProfileRequest;
 import com.priyex.hrms.employee.service.ProfileRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class ProfileRequestServiceImpl implements ProfileRequestService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProfileRequestServiceImpl.class);
 
     private final ProfileRequestMapper profileRequestMapper;
     private final EmployeeMapper employeeMapper;
     private final UserMapper userMapper;
+
+    public ProfileRequestServiceImpl(
+            ProfileRequestMapper profileRequestMapper,
+            EmployeeMapper employeeMapper,
+            UserMapper userMapper
+    ) {
+        super();
+        this.profileRequestMapper = profileRequestMapper;
+        this.employeeMapper = employeeMapper;
+        this.userMapper = userMapper;
+    }
 
     @Override
     @Transactional
@@ -87,6 +100,18 @@ public class ProfileRequestServiceImpl implements ProfileRequestService {
                 employeeMapper.updateDirectField(empId, companyId, "first_name", parts[0]);
                 if (parts.length > 1) {
                     employeeMapper.updateDirectField(empId, companyId, "last_name", parts[1]);
+                } else {
+                    employeeMapper.updateDirectField(empId, companyId, "last_name", "");
+                }
+
+                // Sync with linked user account display_name
+                try {
+                    Employee emp = employeeMapper.findById(empId, companyId).orElse(null);
+                    if (emp != null && emp.getUserId() != null) {
+                        userMapper.updateDisplayName(emp.getUserId(), requestedValue.trim());
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not sync user display name upon profile approval", e);
                 }
             } else if ("EMAIL".equalsIgnoreCase(type)) {
                 employeeMapper.updateDirectField(empId, companyId, "work_email", requestedValue.trim());

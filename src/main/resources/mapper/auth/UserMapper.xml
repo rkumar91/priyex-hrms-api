@@ -125,4 +125,12 @@
         UPDATE users SET is_active = #{active}, updated_at = NOW() WHERE id = #{id}
     </update>
 
+    <update id="updateDisplayName">
+        UPDATE users SET display_name = #{displayName}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="updateAvatarUrl">
+        UPDATE users SET avatar_url = #{avatarUrl}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
 </mapper>

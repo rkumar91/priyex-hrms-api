@@ -12,8 +12,10 @@ import com.priyex.hrms.config.AppProperties;
 import com.priyex.hrms.security.CustomUserDetailsService;
 import com.priyex.hrms.security.JwtTokenProvider;
 import com.priyex.hrms.security.UserPrincipal;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.priyex.hrms.employee.mapper.EmployeeMapper;
+import com.priyex.hrms.employee.model.Employee;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,10 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final int LOCK_DURATION_MINUTES = 30;
@@ -37,6 +39,26 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService userDetailsService;
     private final AppProperties appProperties;
+    private final EmployeeMapper employeeMapper;
+
+    public AuthServiceImpl(
+            UserMapper userMapper,
+            LoginAuditMapper loginAuditMapper,
+            PasswordEncoder passwordEncoder,
+            JwtTokenProvider jwtTokenProvider,
+            CustomUserDetailsService userDetailsService,
+            AppProperties appProperties,
+            EmployeeMapper employeeMapper
+    ) {
+        super();
+        this.userMapper = userMapper;
+        this.loginAuditMapper = loginAuditMapper;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.userDetailsService = userDetailsService;
+        this.appProperties = appProperties;
+        this.employeeMapper = employeeMapper;
+    }
 
     @Override
     @Transactional
@@ -148,11 +170,38 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private LoginResponse.AuthUserResponse buildAuthUserResponse(UserPrincipal principal) {
+        String displayName = principal.getDisplayName();
+        String avatarUrl = null;
+
+        try {
+            Long companyId = principal.getCompanyId() != null ? principal.getCompanyId() : 1L;
+            Employee emp = null;
+            if (principal.getEmployeeId() != null) {
+                emp = employeeMapper.findById(principal.getEmployeeId(), companyId).orElse(null);
+            }
+            if (emp == null && principal.getId() != null) {
+                emp = employeeMapper.findByUserId(principal.getId(), companyId).orElse(null);
+            }
+            if (emp != null) {
+                if (emp.getFirstName() != null && !emp.getFirstName().isBlank()) {
+                    String full = (emp.getFirstName() + " " + (emp.getLastName() != null ? emp.getLastName() : "")).trim();
+                    if (!full.isBlank()) {
+                        displayName = full;
+                    }
+                }
+                if (emp.getPhotoUrl() != null && !emp.getPhotoUrl().isBlank()) {
+                    avatarUrl = emp.getPhotoUrl();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not sync employee profile into auth user response", e);
+        }
+
         return LoginResponse.AuthUserResponse.builder()
                 .id(principal.getId())
                 .email(principal.getEmail())
-                .displayName(principal.getDisplayName())
-                .avatarUrl(null) // loaded separately if needed
+                .displayName(displayName)
+                .avatarUrl(avatarUrl)
                 .companyId(principal.getCompanyId())
                 .employeeId(principal.getEmployeeId())
                 .mustChangePassword(principal.isMustChangePassword())

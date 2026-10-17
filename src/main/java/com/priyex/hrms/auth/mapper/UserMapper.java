@@ -43,4 +43,8 @@ public interface UserMapper {
     Long findRoleIdByName(@Param("name") String name);
 
     void updateUserStatus(@Param("id") Long id, @Param("active") boolean active);
+
+    void updateDisplayName(@Param("id") Long id, @Param("displayName") String displayName);
+
+    void updateAvatarUrl(@Param("id") Long id, @Param("avatarUrl") String avatarUrl);
 }

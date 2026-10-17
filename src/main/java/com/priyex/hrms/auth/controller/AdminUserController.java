@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
-@RequiredArgsConstructor
 @Tag(name = "Admin User & Role Governance", description = "Endpoints for managing user accounts and assigning roles like HR Manager, Admin, Employee")
 @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
 public class AdminUserController {
@@ -35,6 +34,17 @@ public class AdminUserController {
     private final UserMapper userMapper;
     private final EmployeeMapper employeeMapper;
     private final PasswordEncoder passwordEncoder;
+
+    public AdminUserController(
+            UserMapper userMapper,
+            EmployeeMapper employeeMapper,
+            PasswordEncoder passwordEncoder
+    ) {
+        super();
+        this.userMapper = userMapper;
+        this.employeeMapper = employeeMapper;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @GetMapping
     @Operation(summary = "List all registered system users with their roles")
