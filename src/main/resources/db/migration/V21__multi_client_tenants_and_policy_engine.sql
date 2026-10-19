@@ -3,7 +3,10 @@
 -- Supports client-specific rules (TCS, Wipro, Infosys, Priyex)
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- ── 1. Seed Enterprise Client Organizations ──
+-- ── 1. Clean up placeholder multi-org companies from V17 if present ──
+DELETE FROM companies WHERE code IN ('PRIYEX-DIGITAL', 'PRIYEX-CONSULT');
+
+-- ── Seed Enterprise Client Organizations ──
 INSERT INTO companies (id, code, legal_name, brand_name, industry, timezone, currency_code, locale,
                        registration_no, tax_id, email, phone, city, state, country, postal_code, is_active)
 VALUES 
@@ -16,13 +19,26 @@ VALUES
     (4, 'INFOSYS', 'Infosys Limited', 'Infosys', 'Digital Services & Consulting',
      'Asia/Kolkata', 'INR', 'en-IN', 'L85110KA1981PLC013115', 'AAACI8511L',
      'askus@infosys.com', '+91-80-28520261', 'Bengaluru', 'Karnataka', 'India', '560100', TRUE)
-ON CONFLICT (code) DO UPDATE
-SET legal_name = EXCLUDED.legal_name,
+ON CONFLICT (id) DO UPDATE
+SET code = EXCLUDED.code,
+    legal_name = EXCLUDED.legal_name,
     brand_name = EXCLUDED.brand_name,
-    industry = EXCLUDED.industry;
+    industry = EXCLUDED.industry,
+    timezone = EXCLUDED.timezone,
+    currency_code = EXCLUDED.currency_code,
+    locale = EXCLUDED.locale,
+    registration_no = EXCLUDED.registration_no,
+    tax_id = EXCLUDED.tax_id,
+    email = EXCLUDED.email,
+    phone = EXCLUDED.phone,
+    city = EXCLUDED.city,
+    state = EXCLUDED.state,
+    country = EXCLUDED.country,
+    postal_code = EXCLUDED.postal_code,
+    is_active = EXCLUDED.is_active;
 
 -- Reset sequence to prevent collision
-SELECT setval('companies_id_seq', (SELECT MAX(id) FROM companies));
+SELECT setval('companies_id_seq', (SELECT GREATEST(MAX(id), 4) FROM companies));
 
 -- ── 2. Seed Default Head-Office Branches for Each Client ──
 INSERT INTO branches (company_id, code, name, city, state, country, is_head_office)
