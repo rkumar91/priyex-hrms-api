@@ -30,6 +30,18 @@ public class EmployeePayslip {
     private String bankName;
     private String bankAccountNumber;
     private String bankIfsc;
+
+    // Organization / Company info
+    private String companyLegalName;
+    private String companyBrandName;
+    private String companyCode;
+    private String companyCin;
+    private String companyGstin;
+    private String companyLogoUrl;
+    private String companyAddressLine1;
+    private String companyCity;
+    private String companyState;
+    private String companyPostalCode;
     
     private Integer payrollMonth;
     private Integer payrollYear;

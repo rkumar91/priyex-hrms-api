@@ -257,6 +257,12 @@ public class TaxCalculationServiceImpl implements TaxCalculationService {
 
         String employerName = (comp != null && comp.getLegalName() != null) ? comp.getLegalName() : "Priyex Technologies Private Limited";
         String employerPan = (comp != null && comp.getTaxId() != null) ? comp.getTaxId() : "AAACP1234F";
+        String employerAddress = (comp != null && comp.getCity() != null)
+                ? (comp.getCity() + ", " + (comp.getState() != null ? comp.getState() : "India"))
+                : "Nirala Estate, Tech Zone IV, Greater Noida West";
+        String employerCityState = (comp != null && comp.getCity() != null)
+                ? (comp.getCity() + (comp.getState() != null ? ", " + comp.getState() : ", India"))
+                : "Greater Noida, Uttar Pradesh - 201306";
 
         return Form16Response.builder()
                 .certificateNumber("PRY-F16-" + emp.getEmployeeCode() + "-" + fy.replace("-", ""))
@@ -264,8 +270,8 @@ public class TaxCalculationServiceImpl implements TaxCalculationService {
                 .companyId(companyId)
                 .employerLegalName(employerName)
                 .employerBrandName(comp != null ? comp.getBrandName() : "Priyex")
-                .employerAddress("Nirala Estate, Tech Zone IV, Greater Noida West")
-                .employerCityState("Greater Noida, Uttar Pradesh, 201306")
+                .employerAddress(employerAddress)
+                .employerCityState(employerCityState)
                 .employerPan(employerPan)
                 .employerTan("DELP12345F")
                 .employeeId(emp.getId())
@@ -332,7 +338,7 @@ public class TaxCalculationServiceImpl implements TaxCalculationService {
                 .employerLegalName(comp != null ? comp.getLegalName() : "Priyex Technologies Private Limited")
                 .employerPan(comp != null && comp.getTaxId() != null ? comp.getTaxId() : "AAACP1234F")
                 .employerTan("DELP12345F")
-                .employerAddress("Nirala Estate, Greater Noida, UP")
+                .employerAddress(comp != null && comp.getCity() != null ? comp.getCity() + (comp.getState() != null ? ", " + comp.getState() : "") : "Nirala Estate, Greater Noida, UP")
                 .annualRentPaid(decl.getAnnualRentPaid())
                 .landlordName(decl.getLandlordName())
                 .landlordPan(decl.getLandlordPan())

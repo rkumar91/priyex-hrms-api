@@ -63,6 +63,16 @@
         <result property="paymentDate" column="payment_date"/>
         <result property="paymentMode" column="payment_mode"/>
         <result property="transactionReference" column="transaction_reference"/>
+        <result property="companyLegalName" column="company_legal_name"/>
+        <result property="companyBrandName" column="company_brand_name"/>
+        <result property="companyCode" column="company_code"/>
+        <result property="companyCin" column="company_cin"/>
+        <result property="companyGstin" column="company_gstin"/>
+        <result property="companyLogoUrl" column="company_logo_url"/>
+        <result property="companyAddressLine1" column="company_address_line1"/>
+        <result property="companyCity" column="company_city"/>
+        <result property="companyState" column="company_state"/>
+        <result property="companyPostalCode" column="company_postal_code"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
@@ -123,11 +133,22 @@
             e.pf_number,
             e.bank_name,
             e.bank_account_number,
-            e.bank_ifsc
+            e.bank_ifsc,
+            c.legal_name AS company_legal_name,
+            c.brand_name AS company_brand_name,
+            c.code AS company_code,
+            c.registration_no AS company_cin,
+            c.tax_id AS company_gstin,
+            c.logo_url AS company_logo_url,
+            c.address_line1 AS company_address_line1,
+            c.city AS company_city,
+            c.state AS company_state,
+            c.postal_code AS company_postal_code
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN designations des ON e.designation_id = des.id
+        LEFT JOIN companies c ON p.company_id = c.id
         WHERE p.payroll_run_id = #{runId}
         ORDER BY e.employee_code ASC
     </select>
@@ -144,11 +165,22 @@
             e.pf_number,
             e.bank_name,
             e.bank_account_number,
-            e.bank_ifsc
+            e.bank_ifsc,
+            c.legal_name AS company_legal_name,
+            c.brand_name AS company_brand_name,
+            c.code AS company_code,
+            c.registration_no AS company_cin,
+            c.tax_id AS company_gstin,
+            c.logo_url AS company_logo_url,
+            c.address_line1 AS company_address_line1,
+            c.city AS company_city,
+            c.state AS company_state,
+            c.postal_code AS company_postal_code
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN designations des ON e.designation_id = des.id
+        LEFT JOIN companies c ON p.company_id = c.id
         WHERE p.employee_id = #{employeeId}
         ORDER BY p.payroll_year DESC, p.payroll_month DESC
     </select>
@@ -165,11 +197,22 @@
             e.pf_number,
             e.bank_name,
             e.bank_account_number,
-            e.bank_ifsc
+            e.bank_ifsc,
+            c.legal_name AS company_legal_name,
+            c.brand_name AS company_brand_name,
+            c.code AS company_code,
+            c.registration_no AS company_cin,
+            c.tax_id AS company_gstin,
+            c.logo_url AS company_logo_url,
+            c.address_line1 AS company_address_line1,
+            c.city AS company_city,
+            c.state AS company_state,
+            c.postal_code AS company_postal_code
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN designations des ON e.designation_id = des.id
+        LEFT JOIN companies c ON p.company_id = c.id
         WHERE p.id = #{id}
     </select>
 
@@ -185,11 +228,22 @@
             e.pf_number,
             e.bank_name,
             e.bank_account_number,
-            e.bank_ifsc
+            e.bank_ifsc,
+            c.legal_name AS company_legal_name,
+            c.brand_name AS company_brand_name,
+            c.code AS company_code,
+            c.registration_no AS company_cin,
+            c.tax_id AS company_gstin,
+            c.logo_url AS company_logo_url,
+            c.address_line1 AS company_address_line1,
+            c.city AS company_city,
+            c.state AS company_state,
+            c.postal_code AS company_postal_code
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN designations des ON e.designation_id = des.id
+        LEFT JOIN companies c ON p.company_id = c.id
         WHERE p.employee_id = #{employeeId} AND p.payroll_month = #{month} AND p.payroll_year = #{year}
     </select>
 
@@ -230,11 +284,22 @@
             e.pf_number,
             e.bank_name,
             e.bank_account_number,
-            e.bank_ifsc
+            e.bank_ifsc,
+            c.legal_name AS company_legal_name,
+            c.brand_name AS company_brand_name,
+            c.code AS company_code,
+            c.registration_no AS company_cin,
+            c.tax_id AS company_gstin,
+            c.logo_url AS company_logo_url,
+            c.address_line1 AS company_address_line1,
+            c.city AS company_city,
+            c.state AS company_state,
+            c.postal_code AS company_postal_code
         FROM employee_payslips p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN designations des ON e.designation_id = des.id
+        LEFT JOIN companies c ON p.company_id = c.id
         WHERE 1=1
         <if test="companyId != null">
             AND p.company_id = #{companyId}
