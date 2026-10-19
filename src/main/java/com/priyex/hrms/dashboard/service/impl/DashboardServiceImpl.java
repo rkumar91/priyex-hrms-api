@@ -15,8 +15,6 @@ import com.priyex.hrms.payroll.model.EmployeePayslip;
 import com.priyex.hrms.payroll.model.PayrollRun;
 import com.priyex.hrms.payroll.service.PayrollService;
 import com.priyex.hrms.security.UserPrincipal;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;

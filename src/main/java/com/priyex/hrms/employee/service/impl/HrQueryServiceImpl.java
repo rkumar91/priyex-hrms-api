@@ -8,7 +8,6 @@ import com.priyex.hrms.employee.mapper.HrQueryMapper;
 import com.priyex.hrms.employee.model.HrQuery;
 import com.priyex.hrms.employee.model.HrQueryMessage;
 import com.priyex.hrms.employee.service.HrQueryService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

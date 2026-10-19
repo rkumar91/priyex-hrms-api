@@ -40,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final CustomUserDetailsService userDetailsService;
     private final AppProperties appProperties;
     private final EmployeeMapper employeeMapper;
+    private final com.priyex.hrms.organization.mapper.CompanyMapper companyMapper;
 
     public AuthServiceImpl(
             UserMapper userMapper,
@@ -48,7 +49,8 @@ public class AuthServiceImpl implements AuthService {
             JwtTokenProvider jwtTokenProvider,
             CustomUserDetailsService userDetailsService,
             AppProperties appProperties,
-            EmployeeMapper employeeMapper
+            EmployeeMapper employeeMapper,
+            com.priyex.hrms.organization.mapper.CompanyMapper companyMapper
     ) {
         super();
         this.userMapper = userMapper;
@@ -58,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
         this.userDetailsService = userDetailsService;
         this.appProperties = appProperties;
         this.employeeMapper = employeeMapper;
+        this.companyMapper = companyMapper;
     }
 
     @Override
@@ -99,6 +102,17 @@ public class AuthServiceImpl implements AuthService {
 
         // Build principal and generate tokens
         UserPrincipal principal = (UserPrincipal) userDetailsService.loadUserById(user.getId());
+
+        // Multi-tenant organization verification: Validate assigned organization is active
+        if (user.getCompanyId() != null) {
+            com.priyex.hrms.organization.dto.CompanyDto company = companyMapper.findById(user.getCompanyId());
+            if (company != null && Boolean.FALSE.equals(company.getIsActive())) {
+                loginAuditMapper.insert(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent,
+                        "Organization workspace deactivated");
+                throw new BadCredentialsException("Your organization workspace has been suspended or deactivated. Please contact support.");
+            }
+        }
+
         String accessToken = jwtTokenProvider.generateAccessToken(principal);
         String refreshToken = jwtTokenProvider.generateRefreshToken(principal);
 
@@ -197,12 +211,22 @@ public class AuthServiceImpl implements AuthService {
             log.warn("Could not sync employee profile into auth user response", e);
         }
 
+        com.priyex.hrms.organization.dto.CompanyDto companyDto = null;
+        if (principal.getCompanyId() != null) {
+            try {
+                companyDto = companyMapper.findById(principal.getCompanyId());
+            } catch (Exception e) {
+                log.warn("Could not load company details for user {}", principal.getEmail(), e);
+            }
+        }
+
         return LoginResponse.AuthUserResponse.builder()
                 .id(principal.getId())
                 .email(principal.getEmail())
                 .displayName(displayName)
                 .avatarUrl(avatarUrl)
                 .companyId(principal.getCompanyId())
+                .company(companyDto)
                 .employeeId(principal.getEmployeeId())
                 .mustChangePassword(principal.isMustChangePassword())
                 .roles(principal.getRoles())

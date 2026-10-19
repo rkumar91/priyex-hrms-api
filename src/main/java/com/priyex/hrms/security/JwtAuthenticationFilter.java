@@ -64,6 +64,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                if (userDetails instanceof UserPrincipal principal) {
+                    Long targetCompanyId = principal.getCompanyId();
+                    String reqCompanyHeader = request.getHeader("X-Company-Id");
+
+                    if (reqCompanyHeader != null && !reqCompanyHeader.isBlank()) {
+                        try {
+                            Long requestedId = Long.parseLong(reqCompanyHeader.trim());
+                            boolean isPlatformAdmin = principal.getRoles() != null &&
+                                    (principal.getRoles().contains("SUPER_ADMIN") || principal.getRoles().contains("PLATFORM_ADMIN"));
+
+                            if (isPlatformAdmin || (targetCompanyId != null && targetCompanyId.equals(requestedId))) {
+                                targetCompanyId = requestedId;
+                            } else {
+                                log.warn("Blocked untrusted cross-tenant switch by user {} from company {} to company {}",
+                                        principal.getEmail(), principal.getCompanyId(), requestedId);
+                            }
+                        } catch (NumberFormatException ignored) {}
+                    }
+
+                    if (targetCompanyId != null) {
+                        com.priyex.hrms.common.tenant.TenantContext.setCompanyId(targetCompanyId);
+                    }
+                }
             }
         }
 
@@ -98,6 +122,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         return path.startsWith("/api/v1/auth/login")
                 || path.startsWith("/api/v1/auth/password/forgot")
+                || path.startsWith("/api/v1/tenant/clients")
+                || path.startsWith("/api/v1/tenant/detect-domain")
                 || path.startsWith("/api/v1/health")
                 || path.startsWith("/api/v1/ready")
                 || path.startsWith("/actuator")

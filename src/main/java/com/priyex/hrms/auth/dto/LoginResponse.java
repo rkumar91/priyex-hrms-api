@@ -29,6 +29,7 @@ public class LoginResponse {
         private String displayName;
         private String avatarUrl;
         private Long companyId;
+        private com.priyex.hrms.organization.dto.CompanyDto company;
         private Long employeeId;
         private Boolean mustChangePassword;
         private Set<String> roles;

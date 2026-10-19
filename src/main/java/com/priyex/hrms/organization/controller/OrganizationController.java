@@ -8,8 +8,6 @@ import com.priyex.hrms.organization.mapper.DesignationMapper;
 import com.priyex.hrms.security.CurrentUser;
 import com.priyex.hrms.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,13 +17,20 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/organization")
-@RequiredArgsConstructor
-@Tag(name = "Organization Management", description = "Endpoints for company, departments, and branches")
 public class OrganizationController {
 
     private final DepartmentMapper departmentMapper;
     private final DesignationMapper designationMapper;
     private final com.priyex.hrms.organization.mapper.CompanyMapper companyMapper;
+
+    public OrganizationController(DepartmentMapper departmentMapper,
+                                  DesignationMapper designationMapper,
+                                  com.priyex.hrms.organization.mapper.CompanyMapper companyMapper) {
+        super();
+        this.departmentMapper = departmentMapper;
+        this.designationMapper = designationMapper;
+        this.companyMapper = companyMapper;
+    }
 
     @GetMapping("/departments")
     @Operation(summary = "Get active departments with employee counts")
