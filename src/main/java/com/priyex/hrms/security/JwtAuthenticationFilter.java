@@ -122,10 +122,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         return path.startsWith("/api/v1/auth/login")
                 || path.startsWith("/api/v1/auth/password/forgot")
-                || path.startsWith("/api/v1/tenant/clients")
                 || path.startsWith("/api/v1/tenant/detect-domain")
+                || path.startsWith("/api/v1/tenant/validate-company")
                 || path.startsWith("/api/v1/health")
                 || path.startsWith("/api/v1/ready")
+                || path.startsWith("/api/v1/public")
                 || path.startsWith("/actuator")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/api-docs");

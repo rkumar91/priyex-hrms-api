@@ -40,6 +40,16 @@ public class TenantPolicyController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
+    @GetMapping("/validate-company")
+    @Operation(summary = "Validate client company ID for 2-step enterprise login")
+    public ResponseEntity<ApiResponse<com.priyex.hrms.organization.dto.CompanyValidationResult>> validateCompany(
+            @RequestParam(value = "identifier", required = false) String identifier,
+            @RequestParam(value = "companyId", required = false) String companyIdParam) {
+        String input = (identifier != null && !identifier.isBlank()) ? identifier : companyIdParam;
+        com.priyex.hrms.organization.dto.CompanyValidationResult result = clientOnboardingService.validateCompany(input);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
     @GetMapping("/policies")
     @Operation(summary = "Get policy engine configuration for the client/tenant")
     public ResponseEntity<ApiResponse<TenantPolicyConfigDto>> getPolicies(
@@ -65,6 +75,7 @@ public class TenantPolicyController {
     }
 
     @GetMapping("/clients")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Get list of all supported enterprise client organizations")
     public ResponseEntity<ApiResponse<List<CompanyDto>>> getClients() {
         List<CompanyDto> clients = tenantPolicyService.getAllClients();

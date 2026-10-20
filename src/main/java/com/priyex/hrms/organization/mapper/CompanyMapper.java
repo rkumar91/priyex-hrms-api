@@ -42,6 +42,20 @@ public interface CompanyMapper {
     """)
     CompanyDto findByCode(@Param("code") String code);
 
+    @Select("""
+        SELECT id, code, legal_name, brand_name, industry, timezone, currency_code,
+               registration_no, tax_id, email, phone, city, state, country, logo_url, is_active
+        FROM companies
+        WHERE (UPPER(code) = UPPER(#{identifier})
+            OR UPPER(brand_name) = UPPER(#{identifier})
+            OR UPPER(legal_name) = UPPER(#{identifier})
+            OR UPPER(REPLACE(brand_name, ' ', '')) = UPPER(REPLACE(#{identifier}, ' ', ''))
+            OR UPPER(REPLACE(legal_name, ' ', '')) = UPPER(REPLACE(#{identifier}, ' ', '')))
+          AND is_active = TRUE
+        LIMIT 1
+    """)
+    CompanyDto findByIdentifier(@Param("identifier") String identifier);
+
     @Insert("""
         INSERT INTO companies (code, legal_name, brand_name, industry, timezone, currency_code,
                                locale, registration_no, tax_id, email, phone, city, state, country, logo_url, is_active, created_at, updated_at)

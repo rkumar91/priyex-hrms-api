@@ -18,6 +18,8 @@ public interface ClientOnboardingService {
 
     DomainDetectionResult detectDomain(String emailOrDomain);
 
+    com.priyex.hrms.organization.dto.CompanyValidationResult validateCompany(String identifier);
+
     void addDomain(Long clientId, String domainName, boolean isPrimary);
 
     void removeDomain(Long clientId, Long domainId);
