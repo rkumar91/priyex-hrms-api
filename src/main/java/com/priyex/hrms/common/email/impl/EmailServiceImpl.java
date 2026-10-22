@@ -46,33 +46,35 @@ public class EmailServiceImpl implements EmailService {
 
         // 1. Try Resend HTTPS REST API (Port 443 — works everywhere, never blocked by Render Free plan)
         if (resendApiKey != null && !resendApiKey.isBlank()) {
-            try {
-                RestClient restClient = RestClient.builder().baseUrl("https://api.resend.com").build();
-                List<String> recipients = Arrays.stream(recipientEmail.split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .toList();
+            RestClient restClient = RestClient.builder().baseUrl("https://api.resend.com").build();
+            List<String> recipients = Arrays.stream(recipientEmail.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
 
-                Map<String, Object> payload = Map.of(
-                        "from", resendFromEmail,
-                        "to", recipients,
-                        "subject", subject,
-                        "text", body
-                );
+            for (String singleRecipient : recipients) {
+                try {
+                    Map<String, Object> payload = Map.of(
+                            "from", resendFromEmail,
+                            "to", List.of(singleRecipient),
+                            "subject", subject,
+                            "text", body
+                    );
 
-                Map response = restClient.post()
-                        .uri("/emails")
-                        .header("Authorization", "Bearer " + resendApiKey)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(payload)
-                        .retrieve()
-                        .body(Map.class);
+                    Map response = restClient.post()
+                            .uri("/emails")
+                            .header("Authorization", "Bearer " + resendApiKey)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(payload)
+                            .retrieve()
+                            .body(Map.class);
 
-                log.info("Live email successfully dispatched via Resend HTTPS API: id={}", response != null ? response.get("id") : "OK");
-                sentReal = true;
-            } catch (Exception ex) {
-                log.warn("Resend HTTPS API dispatch error (falling back to SMTP if available): {}", ex.getMessage());
-                errorMessage = "Resend: " + ex.getMessage();
+                    log.info("Live email dispatched via Resend HTTPS API to {}: id={}", singleRecipient, response != null ? response.get("id") : "OK");
+                    sentReal = true;
+                } catch (Exception ex) {
+                    log.warn("Resend dispatch to {} failed: {}", singleRecipient, ex.getMessage());
+                    errorMessage = "Resend (" + singleRecipient + "): " + ex.getMessage();
+                }
             }
         }
 
