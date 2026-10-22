@@ -7,9 +7,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +30,95 @@ public class EmailServiceImpl implements EmailService {
 
     @Value("${app.mail.alert-recipients:tech.priyex@gmail.com,in.rkumar91@gmail.com}")
     private String alertRecipients;
+
+    @Value("${app.resend.api-key:}")
+    private String resendApiKey;
+
+    @Value("${app.resend.from-email:Priyex HRMS <onboarding@resend.dev>}")
+    private String resendFromEmail;
+
+    private boolean dispatchEmail(String recipientEmail, String subject, String body, String templateCode) {
+        log.info("\n══════════════════ [EMAIL DISPATCH via Resend/SMTP] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
+                recipientEmail, subject, body);
+
+        boolean sentReal = false;
+        String errorMessage = null;
+
+        // 1. Try Resend HTTPS REST API (Port 443 — works everywhere, never blocked by Render Free plan)
+        if (resendApiKey != null && !resendApiKey.isBlank()) {
+            try {
+                RestClient restClient = RestClient.builder().baseUrl("https://api.resend.com").build();
+                List<String> recipients = Arrays.stream(recipientEmail.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList();
+
+                Map<String, Object> payload = Map.of(
+                        "from", resendFromEmail,
+                        "to", recipients,
+                        "subject", subject,
+                        "text", body
+                );
+
+                Map response = restClient.post()
+                        .uri("/emails")
+                        .header("Authorization", "Bearer " + resendApiKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(payload)
+                        .retrieve()
+                        .body(Map.class);
+
+                log.info("Live email successfully dispatched via Resend HTTPS API: id={}", response != null ? response.get("id") : "OK");
+                sentReal = true;
+            } catch (Exception ex) {
+                log.warn("Resend HTTPS API dispatch error (falling back to SMTP if available): {}", ex.getMessage());
+                errorMessage = "Resend: " + ex.getMessage();
+            }
+        }
+
+        // 2. Fallback to JavaMailSender (SMTP) if Resend not configured or failed
+        if (!sentReal) {
+            JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+            if (mailSender != null) {
+                try {
+                    String[] recipients = recipientEmail.split(",");
+                    for (String r : recipients) {
+                        String clean = r.trim();
+                        if (!clean.isEmpty()) {
+                            SimpleMailMessage msg = new SimpleMailMessage();
+                            msg.setFrom(fromEmail);
+                            msg.setTo(clean);
+                            msg.setSubject(subject);
+                            msg.setText(body);
+                            mailSender.send(msg);
+                        }
+                    }
+                    sentReal = true;
+                    log.info("Live email dispatched via SMTP to {} from {}", recipientEmail, fromEmail);
+                    errorMessage = null;
+                } catch (Exception e) {
+                    log.warn("SMTP dispatch failed: {}", e.getMessage());
+                    if (errorMessage == null) errorMessage = "SMTP: " + e.getMessage();
+                }
+            }
+        }
+
+        // 3. Record delivery log
+        try {
+            EmailDeliveryLog deliveryLog = EmailDeliveryLog.builder()
+                    .recipientEmail(recipientEmail != null && recipientEmail.length() > 200 ? recipientEmail.substring(0, 197) + "..." : recipientEmail)
+                    .subject(subject != null && subject.length() > 300 ? subject.substring(0, 297) + "..." : subject)
+                    .templateCode(templateCode)
+                    .status(sentReal ? "SENT" : (errorMessage != null ? "FAILED" : "SENT_OFFLINE"))
+                    .errorMessage(errorMessage != null && errorMessage.length() > 500 ? errorMessage.substring(0, 497) + "..." : errorMessage)
+                    .build();
+            emailLogMapper.insert(deliveryLog);
+        } catch (Exception e) {
+            log.warn("Failed to write email delivery log: {}", e.getMessage());
+        }
+
+        return sentReal;
+    }
 
     @Override
     public boolean sendOnboardingInvite(String recipientEmail, String workEmail, String recipientName, String tempPassword, String loginUrl) {
@@ -46,38 +141,7 @@ public class EmailServiceImpl implements EmailService {
             From: %s
             """, recipientName, loginUrl, workEmail, tempPassword, fromEmail);
 
-        log.info("\n══════════════════ [EMAIL DISPATCH via {}] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
-                fromEmail, recipientEmail, subject, body);
-
-        boolean sentReal = false;
-        String errorMessage = null;
-
-        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
-        if (mailSender != null) {
-            try {
-                SimpleMailMessage msg = new SimpleMailMessage();
-                msg.setFrom(fromEmail);
-                msg.setTo(recipientEmail);
-                msg.setSubject(subject);
-                msg.setText(body);
-                mailSender.send(msg);
-                sentReal = true;
-                log.info("Live email successfully dispatched to {} from {}", recipientEmail, fromEmail);
-            } catch (Exception e) {
-                log.warn("Real SMTP dispatch failed (falling back to logged delivery): {}", e.getMessage());
-                errorMessage = e.getMessage();
-            }
-        }
-
-        EmailDeliveryLog deliveryLog = EmailDeliveryLog.builder()
-                .recipientEmail(recipientEmail)
-                .subject(subject)
-                .templateCode("ONBOARDING_INVITE")
-                .status(sentReal ? "SENT" : (errorMessage != null ? "FAILED" : "SENT_OFFLINE"))
-                .errorMessage(errorMessage)
-                .build();
-        emailLogMapper.insert(deliveryLog);
-        return sentReal;
+        return dispatchEmail(recipientEmail, subject, body, "ONBOARDING_INVITE");
     }
 
     @Override
@@ -95,38 +159,7 @@ public class EmailServiceImpl implements EmailService {
             From: %s
             """, recipientName, fromEmail);
 
-        log.info("\n══════════════════ [EMAIL DISPATCH via {}] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
-                fromEmail, recipientEmail, subject, body);
-
-        boolean sentReal = false;
-        String errorMessage = null;
-
-        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
-        if (mailSender != null) {
-            try {
-                SimpleMailMessage msg = new SimpleMailMessage();
-                msg.setFrom(fromEmail);
-                msg.setTo(recipientEmail);
-                msg.setSubject(subject);
-                msg.setText(body);
-                mailSender.send(msg);
-                sentReal = true;
-                log.info("Live approval notification dispatched to {} from {}", recipientEmail, fromEmail);
-            } catch (Exception e) {
-                log.warn("Real SMTP dispatch failed for approval notification: {}", e.getMessage());
-                errorMessage = e.getMessage();
-            }
-        }
-
-        EmailDeliveryLog deliveryLog = EmailDeliveryLog.builder()
-                .recipientEmail(recipientEmail)
-                .subject(subject)
-                .templateCode("ONBOARDING_APPROVED")
-                .status(sentReal ? "SENT" : (errorMessage != null ? "FAILED" : "SENT_OFFLINE"))
-                .errorMessage(errorMessage)
-                .build();
-        emailLogMapper.insert(deliveryLog);
-        return sentReal;
+        return dispatchEmail(recipientEmail, subject, body, "ONBOARDING_APPROVED");
     }
 
     @Override
@@ -157,38 +190,7 @@ public class EmailServiceImpl implements EmailService {
             From: %s
             """, recipientName, companyName, inquiryRef, scheduledWindow, assignedConsultant, companyName, fromEmail);
 
-        log.info("\n══════════════════ [EMAIL DISPATCH via {}] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
-                fromEmail, recipientEmail, subject, body);
-
-        boolean sentReal = false;
-        String errorMessage = null;
-
-        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
-        if (mailSender != null) {
-            try {
-                SimpleMailMessage msg = new SimpleMailMessage();
-                msg.setFrom(fromEmail);
-                msg.setTo(recipientEmail);
-                msg.setSubject(subject);
-                msg.setText(body);
-                mailSender.send(msg);
-                sentReal = true;
-                log.info("Live demo confirmation email dispatched to {} from {}", recipientEmail, fromEmail);
-            } catch (Exception e) {
-                log.warn("Real SMTP dispatch failed for demo confirmation: {}", e.getMessage());
-                errorMessage = e.getMessage();
-            }
-        }
-
-        EmailDeliveryLog deliveryLog = EmailDeliveryLog.builder()
-                .recipientEmail(recipientEmail)
-                .subject(subject)
-                .templateCode("DEMO_CONFIRMATION")
-                .status(sentReal ? "SENT" : (errorMessage != null ? "FAILED" : "SENT_OFFLINE"))
-                .errorMessage(errorMessage)
-                .build();
-        emailLogMapper.insert(deliveryLog);
-        return sentReal;
+        return dispatchEmail(recipientEmail, subject, body, "DEMO_CONFIRMATION");
     }
 
     @Override
@@ -221,43 +223,6 @@ public class EmailServiceImpl implements EmailService {
                 (scheduledWindow != null && !scheduledWindow.isBlank() ? scheduledWindow : "Immediate"),
                 inquiryRef);
 
-        log.info("\n══════════════════ [INTERNAL ALERT EMAIL via {}] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
-                fromEmail, alertRecipients, subject, body);
-
-        boolean sentReal = false;
-        String errorMessage = null;
-
-        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
-        if (mailSender != null) {
-            try {
-                String[] recipients = alertRecipients.split(",");
-                for (String r : recipients) {
-                    String cleanRecipient = r.trim();
-                    if (!cleanRecipient.isEmpty()) {
-                        SimpleMailMessage msg = new SimpleMailMessage();
-                        msg.setFrom(fromEmail);
-                        msg.setTo(cleanRecipient);
-                        msg.setSubject(subject);
-                        msg.setText(body);
-                        mailSender.send(msg);
-                    }
-                }
-                sentReal = true;
-                log.info("Internal lead alert email dispatched to {} from {}", alertRecipients, fromEmail);
-            } catch (Exception e) {
-                log.warn("Real SMTP dispatch failed for internal lead alert: {}", e.getMessage());
-                errorMessage = e.getMessage();
-            }
-        }
-
-        EmailDeliveryLog deliveryLog = EmailDeliveryLog.builder()
-                .recipientEmail(alertRecipients)
-                .subject(subject)
-                .templateCode("INTERNAL_LEAD_ALERT")
-                .status(sentReal ? "SENT" : (errorMessage != null ? "FAILED" : "SENT_OFFLINE"))
-                .errorMessage(errorMessage)
-                .build();
-        emailLogMapper.insert(deliveryLog);
-        return sentReal;
+        return dispatchEmail(alertRecipients, subject, body, "INTERNAL_LEAD_ALERT");
     }
 }

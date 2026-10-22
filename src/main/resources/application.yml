@@ -106,6 +106,9 @@ app:
     max-size-mb: 10
   mail:
     alert-recipients: ${APP_MAIL_ALERT_RECIPIENTS:tech.priyex@gmail.com,in.rkumar91@gmail.com}
+  resend:
+    api-key: ${RESEND_API_KEY:}
+    from-email: ${RESEND_FROM_EMAIL:Priyex HRMS <onboarding@resend.dev>}
   whatsapp:
     enabled: ${APP_WHATSAPP_ENABLED:true}
     provider: ${APP_WHATSAPP_PROVIDER:META_CLOUD}
