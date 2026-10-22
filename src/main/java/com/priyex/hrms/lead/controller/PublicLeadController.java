@@ -26,22 +26,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/v1/public")
+@RequiredArgsConstructor
 @Tag(name = "Public SaaS & Lead Acquisition", description = "Public endpoints for prospective clients, demo requests, and platform capabilities")
 public class PublicLeadController {
 
     private static final Logger log = LoggerFactory.getLogger(PublicLeadController.class);
 
-    @Autowired(required = false)
-    private LeadInquiryMapper leadInquiryMapper;
-
-    @Autowired(required = false)
-    private WhatsAppService whatsAppService;
-
-    @Autowired(required = false)
-    private EmailService emailService;
-
-    public PublicLeadController() {
-    }
+    private final LeadInquiryMapper leadInquiryMapper;
+    private final WhatsAppService whatsAppService;
+    private final EmailService emailService;
 
     @PostMapping("/leads")
     @Operation(summary = "Submit a demo request or sales consultation", description = "Captures prospect contact details, persists inquiry, and dispatches automated email/WhatsApp confirmations")
@@ -89,105 +82,90 @@ public class PublicLeadController {
             }
         }
 
-        // 2 & 3. Asynchronously dispatch Email & WhatsApp notifications so user gets instant response
-        final Long finalLeadId = leadId;
-        final String finalInquiryId = inquiryId;
-        final String finalScheduledWindow = scheduledWindow;
-        final String finalAssignedConsultant = assignedConsultant;
-
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
-            String asyncEmailStatus = "PENDING";
-            String asyncWhatsappStatus = "PENDING";
-
-            // Dispatch Email Confirmation
-            if (emailService != null && request.getWorkEmail() != null && !request.getWorkEmail().isBlank()) {
-                try {
-                    boolean emailSent = emailService.sendDemoConfirmation(
-                            request.getWorkEmail(),
-                            request.getFullName(),
-                            request.getCompanyName(),
-                            finalInquiryId,
-                            finalScheduledWindow,
-                            finalAssignedConsultant
-                    );
-                    asyncEmailStatus = emailSent ? "SENT" : "LOGGED";
-                    log.info("Async email confirmation result for [{}]: {}", finalInquiryId, asyncEmailStatus);
-                } catch (Exception e) {
-                    log.warn("Async email confirmation trigger failed for [{}]: {}", finalInquiryId, e.getMessage());
-                    asyncEmailStatus = "FAILED";
-                }
+        // 2. Dispatch Email Confirmation to Prospect
+        String emailStatus = "PENDING";
+        if (request.getWorkEmail() != null && !request.getWorkEmail().isBlank()) {
+            try {
+                log.info("Dispatching live demo confirmation email to [{}]...", request.getWorkEmail());
+                boolean emailSent = emailService.sendDemoConfirmation(
+                        request.getWorkEmail(),
+                        request.getFullName(),
+                        request.getCompanyName(),
+                        inquiryId,
+                        scheduledWindow,
+                        assignedConsultant
+                );
+                emailStatus = emailSent ? "SENT" : "FAILED";
+                log.info("Demo confirmation email result for [{}]: {}", inquiryId, emailStatus);
+            } catch (Exception e) {
+                log.error("Demo confirmation email dispatch failed for [{}]: {}", inquiryId, e.getMessage(), e);
+                emailStatus = "FAILED";
             }
+        }
 
-            // Dispatch Internal Lead Alert Email to leadership & sales (tech.priyex@gmail.com, in.rkumar91@gmail.com)
-            if (emailService != null) {
-                try {
-                    emailService.sendInternalLeadAlert(
-                            request.getCompanyName(),
-                            request.getFullName(),
-                            request.getWorkEmail(),
-                            request.getPhoneNumber(),
-                            request.getEmployeeCount(),
-                            request.getInterestModule(),
-                            finalScheduledWindow,
-                            finalInquiryId
-                    );
-                    log.info("Dispatched internal lead alert email to team for ref [{}]", finalInquiryId);
-                } catch (Exception e) {
-                    log.warn("Async internal lead alert email failed for [{}]: {}", finalInquiryId, e.getMessage());
-                }
+        // 3. Dispatch Internal Lead Alert Email to leadership & sales (tech.priyex@gmail.com, in.rkumar91@gmail.com)
+        try {
+            log.info("Dispatching internal lead alert email for [{} - {}]...", request.getCompanyName(), inquiryId);
+            boolean alertSent = emailService.sendInternalLeadAlert(
+                    request.getCompanyName(),
+                    request.getFullName(),
+                    request.getWorkEmail(),
+                    request.getPhoneNumber(),
+                    request.getEmployeeCount(),
+                    request.getInterestModule(),
+                    scheduledWindow,
+                    inquiryId
+            );
+            log.info("Internal lead alert email result for [{}]: {}", inquiryId, alertSent ? "SENT" : "FAILED");
+        } catch (Exception e) {
+            log.error("Internal lead alert email dispatch failed for [{}]: {}", inquiryId, e.getMessage(), e);
+        }
+
+        // 4. Dispatch WhatsApp Notifications (already @Async in WhatsAppServiceImpl)
+        String whatsappStatus = "PENDING";
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
+            try {
+                boolean waSent = whatsAppService.sendDemoBookingConfirmation(
+                        request.getPhoneNumber(),
+                        request.getFullName(),
+                        request.getCompanyName(),
+                        inquiryId,
+                        scheduledWindow,
+                        assignedConsultant
+                );
+                whatsappStatus = waSent ? "SENT" : "MOCK_SENT";
+            } catch (Exception e) {
+                log.warn("WhatsApp end-user dispatch error for [{}]: {}", inquiryId, e.getMessage());
+                whatsappStatus = "FAILED";
             }
+        } else {
+            whatsappStatus = "SKIPPED_NO_PHONE";
+        }
 
-            // Dispatch Automated WhatsApp Notifications
-            if (whatsAppService != null) {
-                // Stream 1: End User / Prospect
-                if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
-                    try {
-                        boolean waSent = whatsAppService.sendDemoBookingConfirmation(
-                                request.getPhoneNumber(),
-                                request.getFullName(),
-                                request.getCompanyName(),
-                                finalInquiryId,
-                                finalScheduledWindow,
-                                finalAssignedConsultant
-                        );
-                        asyncWhatsappStatus = waSent ? "SENT" : "MOCK_SENT";
-                        log.info("Async WhatsApp dispatch result for [{}]: {}", finalInquiryId, asyncWhatsappStatus);
-                    } catch (Exception e) {
-                        log.warn("Async WhatsApp end-user dispatch encountered error for [{}]: {}", finalInquiryId, e.getMessage());
-                        asyncWhatsappStatus = "FAILED";
-                    }
-                } else {
-                    asyncWhatsappStatus = "SKIPPED_NO_PHONE";
-                }
+        try {
+            whatsAppService.sendInternalSalesAlert(
+                    null,
+                    request.getCompanyName(),
+                    request.getFullName(),
+                    request.getWorkEmail(),
+                    request.getPhoneNumber(),
+                    request.getEmployeeCount(),
+                    request.getInterestModule(),
+                    scheduledWindow,
+                    inquiryId
+            );
+        } catch (Exception e) {
+            log.warn("Priyex Sales Group WhatsApp alert dispatch error: {}", e.getMessage());
+        }
 
-                // Stream 2: Automated lead notification to static Priyex Sales Group (+91 9901694683)
-                try {
-                    whatsAppService.sendInternalSalesAlert(
-                            null,
-                            request.getCompanyName(),
-                            request.getFullName(),
-                            request.getWorkEmail(),
-                            request.getPhoneNumber(),
-                            request.getEmployeeCount(),
-                            request.getInterestModule(),
-                            finalScheduledWindow,
-                            finalInquiryId
-                    );
-                    log.info("Dispatched automated lead alert to Priyex Sales Group for ref [{}]", finalInquiryId);
-                } catch (Exception e) {
-                    log.warn("Priyex Sales Group alert dispatch encountered error: {}", e.getMessage());
-                }
+        // 5. Update delivery audit statuses in DB if record was persisted
+        if (leadId != null) {
+            try {
+                leadInquiryMapper.updateDeliveryStatuses(leadId, emailStatus, whatsappStatus);
+            } catch (Exception e) {
+                log.warn("Failed to update delivery audit statuses for lead [{}]: {}", leadId, e.getMessage());
             }
-
-            // Update delivery audit statuses in DB if record was persisted
-            if (leadInquiryMapper != null && finalLeadId != null) {
-                try {
-                    leadInquiryMapper.updateDeliveryStatuses(finalLeadId, asyncEmailStatus, asyncWhatsappStatus);
-                } catch (Exception e) {
-                    log.warn("Failed to update delivery audit statuses for lead [{}]: {}", finalLeadId, e.getMessage());
-                }
-            }
-        });
+        }
 
         String message = "Thank you, " + request.getFullName() + "! Your consultation request for "
                 + request.getCompanyName() + " has been received. Our enterprise team will connect with you shortly.";
