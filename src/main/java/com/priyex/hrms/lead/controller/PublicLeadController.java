@@ -118,6 +118,25 @@ public class PublicLeadController {
                 }
             }
 
+            // Dispatch Internal Lead Alert Email to leadership & sales (tech.priyex@gmail.com, in.rkumar91@gmail.com)
+            if (emailService != null) {
+                try {
+                    emailService.sendInternalLeadAlert(
+                            request.getCompanyName(),
+                            request.getFullName(),
+                            request.getWorkEmail(),
+                            request.getPhoneNumber(),
+                            request.getEmployeeCount(),
+                            request.getInterestModule(),
+                            finalScheduledWindow,
+                            finalInquiryId
+                    );
+                    log.info("Dispatched internal lead alert email to team for ref [{}]", finalInquiryId);
+                } catch (Exception e) {
+                    log.warn("Async internal lead alert email failed for [{}]: {}", finalInquiryId, e.getMessage());
+                }
+            }
+
             // Dispatch Automated WhatsApp Notifications
             if (whatsAppService != null) {
                 // Stream 1: End User / Prospect

@@ -22,6 +22,9 @@ public class EmailServiceImpl implements EmailService {
     @Value("${spring.mail.from:tech.priyex@gmail.com}")
     private String fromEmail;
 
+    @Value("${app.mail.alert-recipients:tech.priyex@gmail.com,in.rkumar91@gmail.com}")
+    private String alertRecipients;
+
     @Override
     public boolean sendOnboardingInvite(String recipientEmail, String workEmail, String recipientName, String tempPassword, String loginUrl) {
         String subject = "Welcome to Priyex People — Your Onboarding Credentials";
@@ -181,6 +184,76 @@ public class EmailServiceImpl implements EmailService {
                 .recipientEmail(recipientEmail)
                 .subject(subject)
                 .templateCode("DEMO_CONFIRMATION")
+                .status(sentReal ? "SENT" : (errorMessage != null ? "FAILED" : "SENT_OFFLINE"))
+                .errorMessage(errorMessage)
+                .build();
+        emailLogMapper.insert(deliveryLog);
+        return sentReal;
+    }
+
+    @Override
+    public boolean sendInternalLeadAlert(String companyName, String fullName, String workEmail, String phoneNumber, String employeeCount, String interestModule, String scheduledWindow, String inquiryRef) {
+        String subject = "🚨 New Priyex Lead & Demo Request: " + companyName + " [" + inquiryRef + "]";
+        String body = String.format("""
+            Hello Priyex Leadership & Sales Team,
+
+            A new enterprise demo / sales consultation request has been submitted on priyex.com.
+
+            Prospect Details:
+            ───────────────────────────────────────────────────────
+            • Company: %s
+            • Contact Name: %s
+            • Work Email: %s
+            • Phone / WhatsApp: %s
+            • Workforce Size: %s
+            • Primary Interest: %s
+            • Preferred Window: %s
+            • Reference ID: %s
+
+            Action Required:
+            Please reach out to the prospect to confirm their interactive live demo session.
+
+            Priyex People Cloud Automation
+            """, companyName, fullName, workEmail,
+                (phoneNumber != null && !phoneNumber.isBlank() ? phoneNumber : "N/A"),
+                (employeeCount != null && !employeeCount.isBlank() ? employeeCount : "N/A"),
+                (interestModule != null && !interestModule.isBlank() ? interestModule : "Full Suite"),
+                (scheduledWindow != null && !scheduledWindow.isBlank() ? scheduledWindow : "Immediate"),
+                inquiryRef);
+
+        log.info("\n══════════════════ [INTERNAL ALERT EMAIL via {}] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
+                fromEmail, alertRecipients, subject, body);
+
+        boolean sentReal = false;
+        String errorMessage = null;
+
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+        if (mailSender != null) {
+            try {
+                String[] recipients = alertRecipients.split(",");
+                for (String r : recipients) {
+                    String cleanRecipient = r.trim();
+                    if (!cleanRecipient.isEmpty()) {
+                        SimpleMailMessage msg = new SimpleMailMessage();
+                        msg.setFrom(fromEmail);
+                        msg.setTo(cleanRecipient);
+                        msg.setSubject(subject);
+                        msg.setText(body);
+                        mailSender.send(msg);
+                    }
+                }
+                sentReal = true;
+                log.info("Internal lead alert email dispatched to {} from {}", alertRecipients, fromEmail);
+            } catch (Exception e) {
+                log.warn("Real SMTP dispatch failed for internal lead alert: {}", e.getMessage());
+                errorMessage = e.getMessage();
+            }
+        }
+
+        EmailDeliveryLog deliveryLog = EmailDeliveryLog.builder()
+                .recipientEmail(alertRecipients)
+                .subject(subject)
+                .templateCode("INTERNAL_LEAD_ALERT")
                 .status(sentReal ? "SENT" : (errorMessage != null ? "FAILED" : "SENT_OFFLINE"))
                 .errorMessage(errorMessage)
                 .build();

@@ -104,6 +104,8 @@ app:
     upload-dir: ${FILE_UPLOAD_DIR:./uploads}
     allowed-extensions: pdf,png,jpg,jpeg,gif,doc,docx,xls,xlsx,csv,txt,zip
     max-size-mb: 10
+  mail:
+    alert-recipients: ${APP_MAIL_ALERT_RECIPIENTS:tech.priyex@gmail.com,in.rkumar91@gmail.com}
   whatsapp:
     enabled: ${APP_WHATSAPP_ENABLED:true}
     provider: ${APP_WHATSAPP_PROVIDER:META_CLOUD}
