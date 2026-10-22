@@ -31,6 +31,12 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.mail.alert-recipients:tech.priyex@gmail.com,in.rkumar91@gmail.com}")
     private String alertRecipients;
 
+    @Value("${app.brevo.api-key:}")
+    private String brevoApiKey;
+
+    @Value("${app.brevo.sender-name:Priyex People HR Operations}")
+    private String brevoSenderName;
+
     @Value("${app.resend.api-key:}")
     private String resendApiKey;
 
@@ -38,14 +44,49 @@ public class EmailServiceImpl implements EmailService {
     private String resendFromEmail;
 
     private boolean dispatchEmail(String recipientEmail, String subject, String body, String templateCode) {
-        log.info("\n══════════════════ [EMAIL DISPATCH via Resend/SMTP] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
+        log.info("\n══════════════════ [EMAIL DISPATCH via Brevo/Resend/SMTP] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
                 recipientEmail, subject, body);
 
         boolean sentReal = false;
         String errorMessage = null;
 
-        // 1. Try Resend HTTPS REST API (Port 443 — works everywhere, never blocked by Render Free plan)
-        if (resendApiKey != null && !resendApiKey.isBlank()) {
+        // 1. Try Brevo HTTPS REST API (Port 443 — sends reliably from tech.priyex@gmail.com on Render)
+        if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+            RestClient brevoClient = RestClient.builder().baseUrl("https://api.brevo.com/v3").build();
+            List<String> recipients = Arrays.stream(recipientEmail.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+
+            for (String singleRecipient : recipients) {
+                try {
+                    Map<String, Object> payload = Map.of(
+                            "sender", Map.of("name", brevoSenderName, "email", fromEmail),
+                            "to", List.of(Map.of("email", singleRecipient)),
+                            "subject", subject,
+                            "textContent", body
+                    );
+
+                    Map response = brevoClient.post()
+                            .uri("/smtp/email")
+                            .header("api-key", brevoApiKey)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(payload)
+                            .retrieve()
+                            .body(Map.class);
+
+                    log.info("Live email dispatched via Brevo HTTPS API to {}: messageId={}", singleRecipient, response != null ? response.get("messageId") : "OK");
+                    sentReal = true;
+                    errorMessage = null;
+                } catch (Exception ex) {
+                    log.warn("Brevo dispatch to {} failed: {}", singleRecipient, ex.getMessage());
+                    errorMessage = "Brevo (" + singleRecipient + "): " + ex.getMessage();
+                }
+            }
+        }
+
+        // 2. Fallback to Resend HTTPS REST API (Port 443) if Brevo not configured or failed
+        if (!sentReal && resendApiKey != null && !resendApiKey.isBlank()) {
             RestClient restClient = RestClient.builder().baseUrl("https://api.resend.com").build();
             List<String> recipients = Arrays.stream(recipientEmail.split(","))
                     .map(String::trim)
