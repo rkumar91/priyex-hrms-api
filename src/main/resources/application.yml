@@ -101,6 +101,14 @@ app:
     upload-dir: ${FILE_UPLOAD_DIR:./uploads}
     allowed-extensions: pdf,png,jpg,jpeg,gif,doc,docx,xls,xlsx,csv,txt,zip
     max-size-mb: 10
+  whatsapp:
+    enabled: ${APP_WHATSAPP_ENABLED:true}
+    provider: ${APP_WHATSAPP_PROVIDER:META_CLOUD}
+    business-phone: ${APP_WHATSAPP_BUSINESS_PHONE:+919901694683}
+    api-token: ${APP_WHATSAPP_TOKEN:}
+    phone-number-id: ${APP_WHATSAPP_PHONE_ID:}
+    api-url: ${APP_WHATSAPP_API_URL:https://graph.facebook.com/v20.0}
+    sales-alert-phone: ${APP_WHATSAPP_SALES_ALERT_PHONE:+919901694683}
 
 # ── Actuator ──
 management:

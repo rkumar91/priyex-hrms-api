@@ -125,4 +125,66 @@ public class EmailServiceImpl implements EmailService {
         emailLogMapper.insert(deliveryLog);
         return sentReal;
     }
+
+    @Override
+    public boolean sendDemoConfirmation(String recipientEmail, String recipientName, String companyName, String inquiryRef, String scheduledWindow, String assignedConsultant) {
+        String subject = "Priyex People Cloud — Interactive Live Demo Scheduled [" + inquiryRef + "]";
+        String body = String.format("""
+            Hello %s,
+
+            Thank you for scheduling a live interactive demo of Priyex People Enterprise HRMS for %s.
+
+            Demo Confirmation Details:
+            ───────────────────────────────────────────────────────
+            Booking Reference ID: %s
+            Scheduled Window: %s
+            Assigned Solutions Lead: %s
+            Platform Access: https://priyex-hrms.vercel.app
+
+            What to Expect During the 30-Minute Session:
+            1. Real-time Multi-Tier Payroll & Statutory Tax calculation demonstration
+            2. Biometric & Geofenced Time Attendance live clock-in
+            3. Multi-tenant policy configuration tailored for %s
+            4. Dedicated Q&A with your Solutions Lead
+
+            If you need to reschedule or invite additional stakeholders from your team, simply reply to this email.
+
+            Warm regards,
+            Priyex Enterprise Solutions Group
+            From: %s
+            """, recipientName, companyName, inquiryRef, scheduledWindow, assignedConsultant, companyName, fromEmail);
+
+        log.info("\n══════════════════ [EMAIL DISPATCH via {}] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
+                fromEmail, recipientEmail, subject, body);
+
+        boolean sentReal = false;
+        String errorMessage = null;
+
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+        if (mailSender != null) {
+            try {
+                SimpleMailMessage msg = new SimpleMailMessage();
+                msg.setFrom(fromEmail);
+                msg.setTo(recipientEmail);
+                msg.setSubject(subject);
+                msg.setText(body);
+                mailSender.send(msg);
+                sentReal = true;
+                log.info("Live demo confirmation email dispatched to {} from {}", recipientEmail, fromEmail);
+            } catch (Exception e) {
+                log.warn("Real SMTP dispatch failed for demo confirmation: {}", e.getMessage());
+                errorMessage = e.getMessage();
+            }
+        }
+
+        EmailDeliveryLog deliveryLog = EmailDeliveryLog.builder()
+                .recipientEmail(recipientEmail)
+                .subject(subject)
+                .templateCode("DEMO_CONFIRMATION")
+                .status(sentReal ? "SENT" : (errorMessage != null ? "FAILED" : "SENT_OFFLINE"))
+                .errorMessage(errorMessage)
+                .build();
+        emailLogMapper.insert(deliveryLog);
+        return sentReal;
+    }
 }
