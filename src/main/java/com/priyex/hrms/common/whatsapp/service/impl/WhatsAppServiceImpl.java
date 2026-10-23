@@ -44,7 +44,7 @@ public class WhatsAppServiceImpl implements WhatsAppService {
 
     @Override
     @Async
-    @SuppressWarnings({"null", "rawtypes", "unchecked"})
+    @SuppressWarnings("null")
     public boolean sendDemoBookingConfirmation(String phoneNumber,
                                                String recipientName,
                                                String companyName,
@@ -139,7 +139,7 @@ public class WhatsAppServiceImpl implements WhatsAppService {
 
     @Override
     @Async
-    @SuppressWarnings({"null", "rawtypes", "unchecked"})
+    @SuppressWarnings("null")
     public boolean sendInternalSalesAlert(String recipientPhone,
                                           String companyName,
                                           String contactPerson,

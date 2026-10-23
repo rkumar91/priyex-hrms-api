@@ -1,0 +1,172 @@
+{
+  "groups": [
+    {
+      "name": "app",
+      "type": "com.priyex.hrms.config.AppProperties",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    },
+    {
+      "name": "app.jwt",
+      "type": "com.priyex.hrms.config.AppProperties$Jwt",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    },
+    {
+      "name": "app.cors",
+      "type": "com.priyex.hrms.config.AppProperties$Cors",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    },
+    {
+      "name": "app.file",
+      "type": "com.priyex.hrms.config.AppProperties$FileConfig",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    },
+    {
+      "name": "app.mail",
+      "type": "com.priyex.hrms.config.AppProperties$Mail",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    },
+    {
+      "name": "app.brevo",
+      "type": "com.priyex.hrms.config.AppProperties$Brevo",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    },
+    {
+      "name": "app.resend",
+      "type": "com.priyex.hrms.config.AppProperties$Resend",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    },
+    {
+      "name": "app.whatsapp",
+      "type": "com.priyex.hrms.config.AppProperties$Whatsapp",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "app.platform-url",
+      "type": "java.lang.String",
+      "description": "Base platform URL for email and notification links.",
+      "sourceType": "com.priyex.hrms.config.AppProperties"
+    },
+    {
+      "name": "app.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Secret key for JWT token generation and verification.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Jwt"
+    },
+    {
+      "name": "app.jwt.access-token-expiration-ms",
+      "type": "java.lang.Long",
+      "description": "Expiration duration in ms for access token.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Jwt"
+    },
+    {
+      "name": "app.jwt.refresh-token-expiration-ms",
+      "type": "java.lang.Long",
+      "description": "Expiration duration in ms for refresh token.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Jwt"
+    },
+    {
+      "name": "app.cors.allowed-origins",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Allowed origins for CORS.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.file.upload-dir",
+      "type": "java.lang.String",
+      "description": "Directory for uploaded files.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$FileConfig"
+    },
+    {
+      "name": "app.file.allowed-extensions",
+      "type": "java.lang.String",
+      "description": "Allowed file extensions.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$FileConfig"
+    },
+    {
+      "name": "app.file.max-size-mb",
+      "type": "java.lang.Integer",
+      "description": "Max upload file size in megabytes.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$FileConfig"
+    },
+    {
+      "name": "app.mail.from",
+      "type": "java.lang.String",
+      "description": "Sender email address.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Mail"
+    },
+    {
+      "name": "app.mail.alert-recipients",
+      "type": "java.lang.String",
+      "description": "Recipients for email alerts.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Mail"
+    },
+    {
+      "name": "app.brevo.api-key",
+      "type": "java.lang.String",
+      "description": "Brevo API key.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Brevo"
+    },
+    {
+      "name": "app.brevo.sender-name",
+      "type": "java.lang.String",
+      "description": "Brevo sender name.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Brevo"
+    },
+    {
+      "name": "app.resend.api-key",
+      "type": "java.lang.String",
+      "description": "Resend API key.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Resend"
+    },
+    {
+      "name": "app.resend.from-email",
+      "type": "java.lang.String",
+      "description": "Resend from email address.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Resend"
+    },
+    {
+      "name": "app.whatsapp.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable WhatsApp notifications.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Whatsapp"
+    },
+    {
+      "name": "app.whatsapp.provider",
+      "type": "java.lang.String",
+      "description": "WhatsApp provider name.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Whatsapp"
+    },
+    {
+      "name": "app.whatsapp.business-phone",
+      "type": "java.lang.String",
+      "description": "Priyex official WhatsApp helpline.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Whatsapp"
+    },
+    {
+      "name": "app.whatsapp.api-token",
+      "type": "java.lang.String",
+      "description": "Meta WhatsApp Cloud API token.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Whatsapp"
+    },
+    {
+      "name": "app.whatsapp.phone-number-id",
+      "type": "java.lang.String",
+      "description": "Meta WhatsApp phone number ID.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Whatsapp"
+    },
+    {
+      "name": "app.whatsapp.api-url",
+      "type": "java.lang.String",
+      "description": "Meta WhatsApp Cloud API URL.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Whatsapp"
+    },
+    {
+      "name": "app.whatsapp.sales-alert-phone",
+      "type": "java.lang.String",
+      "description": "Internal sales alert recipient phone or group.",
+      "sourceType": "com.priyex.hrms.config.AppProperties$Whatsapp"
+    }
+  ]
+}

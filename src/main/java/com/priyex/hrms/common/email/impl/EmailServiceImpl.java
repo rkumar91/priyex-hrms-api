@@ -52,7 +52,7 @@ public class EmailServiceImpl implements EmailService {
         return dispatchEmail(recipientEmail, subject, body, null, templateCode);
     }
 
-    @SuppressWarnings({"null", "rawtypes", "unchecked"})
+    @SuppressWarnings("null")
     private boolean dispatchEmail(String recipientEmail, String subject, String body, String htmlBody, String templateCode) {
         log.info(
                 "\n══════════════════ [EMAIL DISPATCH via Brevo/Resend/SMTP] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
