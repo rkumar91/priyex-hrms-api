@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.priyex.hrms.separation.mapper.SeparationMapper">
+
+    <!-- ── Policy ── -->
+    <select id="findPolicyByCompanyId" resultType="com.priyex.hrms.separation.model.SeparationPolicy">
+        SELECT id, company_id AS companyId,
+               default_notice_days AS defaultNoticeDays,
+               probation_notice_days AS probationNoticeDays,
+               allow_resignation_withdrawal AS allowResignationWithdrawal,
+               auto_deactivate_user AS autoDeactivateUser,
+               require_manager_approval AS requireManagerApproval,
+               require_it_clearance AS requireItClearance,
+               require_finance_clearance AS requireFinanceClearance,
+               created_at AS createdAt,
+               updated_at AS updatedAt
+        FROM separation_policies
+        WHERE company_id = #{companyId}
+        LIMIT 1
+    </select>
+
+    <insert id="insertPolicy" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO separation_policies (
+            company_id, default_notice_days, probation_notice_days,
+            allow_resignation_withdrawal, auto_deactivate_user,
+            require_manager_approval, require_it_clearance, require_finance_clearance
+        ) VALUES (
+            #{companyId}, #{defaultNoticeDays}, #{probationNoticeDays},
+            #{allowResignationWithdrawal}, #{autoDeactivateUser},
+            #{requireManagerApproval}, #{requireItClearance}, #{requireFinanceClearance}
+        )
+    </insert>
+
+    <update id="updatePolicy">
+        UPDATE separation_policies
+        SET default_notice_days = #{defaultNoticeDays},
+            probation_notice_days = #{probationNoticeDays},
+            allow_resignation_withdrawal = #{allowResignationWithdrawal},
+            auto_deactivate_user = #{autoDeactivateUser},
+            require_manager_approval = #{requireManagerApproval},
+            require_it_clearance = #{requireItClearance},
+            require_finance_clearance = #{requireFinanceClearance},
+            updated_at = NOW()
+        WHERE company_id = #{companyId}
+    </update>
+
+    <!-- ── Separation Case ── -->
+    <insert id="insertSeparationCase" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO separation_cases (
+            company_id, employee_id, case_type, initiator_role, initiator_user_id,
+            reason_category, reason_details, submission_date,
+            requested_last_working_day, approved_last_working_day,
+            notice_period_days, is_notice_waived, notice_shortfall_days,
+            status, handover_notes,
+            manager_approval_status, manager_remarks, manager_reviewed_at, manager_reviewed_by,
+            hr_approval_status, hr_remarks, hr_reviewed_at, hr_reviewed_by,
+            exit_interview_completed, exit_interview_notes
+        ) VALUES (
+            #{companyId}, #{employeeId}, #{caseType}, #{initiatorRole}, #{initiatorUserId},
+            #{reasonCategory}, #{reasonDetails}, #{submissionDate},
+            #{requestedLastWorkingDay}, #{approvedLastWorkingDay},
+            #{noticePeriodDays}, #{isNoticeWaived}, #{noticeShortfallDays},
+            #{status}, #{handoverNotes},
+            #{managerApprovalStatus}, #{managerRemarks}, #{managerReviewedAt}, #{managerReviewedBy},
+            #{hrApprovalStatus}, #{hrRemarks}, #{hrReviewedAt}, #{hrReviewedBy},
+            #{exitInterviewCompleted}, #{exitInterviewNotes}
+        )
+    </insert>
+
+    <update id="updateSeparationCase">
+        UPDATE separation_cases
+        SET approved_last_working_day = #{approvedLastWorkingDay},
+            is_notice_waived = #{isNoticeWaived},
+            notice_shortfall_days = #{noticeShortfallDays},
+            status = #{status},
+            handover_notes = #{handoverNotes},
+            manager_approval_status = #{managerApprovalStatus},
+            manager_remarks = #{managerRemarks},
+            manager_reviewed_at = #{managerReviewedAt},
+            manager_reviewed_by = #{managerReviewedBy},
+            hr_approval_status = #{hrApprovalStatus},
+            hr_remarks = #{hrRemarks},
+            hr_reviewed_at = #{hrReviewedAt},
+            hr_reviewed_by = #{hrReviewedBy},
+            exit_interview_completed = #{exitInterviewCompleted},
+            exit_interview_notes = #{exitInterviewNotes},
+            user_deactivated_at = #{userDeactivatedAt},
+            finalized_by = #{finalizedBy},
+            finalized_at = #{finalizedAt},
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <select id="findSeparationById" resultType="com.priyex.hrms.separation.model.SeparationCase">
+        SELECT sc.id, sc.company_id AS companyId, sc.employee_id AS employeeId,
+               sc.case_type AS caseType, sc.initiator_role AS initiatorRole,
+               sc.initiator_user_id AS initiatorUserId, sc.reason_category AS reasonCategory,
+               sc.reason_details AS reasonDetails, sc.submission_date AS submissionDate,
+               sc.requested_last_working_day AS requestedLastWorkingDay,
+               sc.approved_last_working_day AS approvedLastWorkingDay,
+               sc.notice_period_days AS noticePeriodDays,
+               sc.is_notice_waived AS isNoticeWaived,
+               sc.notice_shortfall_days AS noticeShortfallDays,
+               sc.status, sc.handover_notes AS handoverNotes,
+               sc.manager_approval_status AS managerApprovalStatus,
+               sc.manager_remarks AS managerRemarks,
+               sc.manager_reviewed_at AS managerReviewedAt,
+               sc.manager_reviewed_by AS managerReviewedBy,
+               sc.hr_approval_status AS hrApprovalStatus,
+               sc.hr_remarks AS hrRemarks,
+               sc.hr_reviewed_at AS hrReviewedAt,
+               sc.hr_reviewed_by AS hrReviewedBy,
+               sc.exit_interview_completed AS exitInterviewCompleted,
+               sc.exit_interview_notes AS exitInterviewNotes,
+               sc.user_deactivated_at AS userDeactivatedAt,
+               sc.finalized_by AS finalizedBy,
+               sc.finalized_at AS finalizedAt,
+               sc.created_at AS createdAt,
+               sc.updated_at AS updatedAt,
+               e.employee_code AS employeeCode,
+               e.first_name AS firstName,
+               e.last_name AS lastName,
+               e.work_email AS workEmail,
+               d.name AS departmentName,
+               des.title AS designationTitle,
+               TRIM(CONCAT(mgr.first_name, ' ', mgr.last_name)) AS reportingManagerName
+        FROM separation_cases sc
+        JOIN employees e ON e.id = sc.employee_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN designations des ON des.id = e.designation_id
+        LEFT JOIN employees mgr ON mgr.id = e.reporting_manager_id
+        WHERE sc.id = #{id} AND sc.company_id = #{companyId}
+    </select>
+
+    <select id="findActiveSeparationByEmployeeId" resultType="com.priyex.hrms.separation.model.SeparationCase">
+        SELECT sc.id, sc.company_id AS companyId, sc.employee_id AS employeeId,
+               sc.case_type AS caseType, sc.initiator_role AS initiatorRole,
+               sc.initiator_user_id AS initiatorUserId, sc.reason_category AS reasonCategory,
+               sc.reason_details AS reasonDetails, sc.submission_date AS submissionDate,
+               sc.requested_last_working_day AS requestedLastWorkingDay,
+               sc.approved_last_working_day AS approvedLastWorkingDay,
+               sc.notice_period_days AS noticePeriodDays,
+               sc.is_notice_waived AS isNoticeWaived,
+               sc.notice_shortfall_days AS noticeShortfallDays,
+               sc.status, sc.handover_notes AS handoverNotes,
+               sc.manager_approval_status AS managerApprovalStatus,
+               sc.manager_remarks AS managerRemarks,
+               sc.manager_reviewed_at AS managerReviewedAt,
+               sc.manager_reviewed_by AS managerReviewedBy,
+               sc.hr_approval_status AS hrApprovalStatus,
+               sc.hr_remarks AS hrRemarks,
+               sc.hr_reviewed_at AS hrReviewedAt,
+               sc.hr_reviewed_by AS hrReviewedBy,
+               sc.exit_interview_completed AS exitInterviewCompleted,
+               sc.exit_interview_notes AS exitInterviewNotes,
+               sc.user_deactivated_at AS userDeactivatedAt,
+               sc.finalized_by AS finalizedBy,
+               sc.finalized_at AS finalizedAt,
+               sc.created_at AS createdAt,
+               sc.updated_at AS updatedAt,
+               e.employee_code AS employeeCode,
+               e.first_name AS firstName,
+               e.last_name AS lastName,
+               e.work_email AS workEmail,
+               d.name AS departmentName,
+               des.title AS designationTitle,
+               TRIM(CONCAT(mgr.first_name, ' ', mgr.last_name)) AS reportingManagerName
+        FROM separation_cases sc
+        JOIN employees e ON e.id = sc.employee_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN designations des ON des.id = e.designation_id
+        LEFT JOIN employees mgr ON mgr.id = e.reporting_manager_id
+        WHERE sc.employee_id = #{employeeId}
+          AND sc.company_id = #{companyId}
+          AND sc.status NOT IN ('WITHDRAWN', 'REJECTED')
+        ORDER BY sc.created_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="findSeparationCases" resultType="com.priyex.hrms.separation.model.SeparationCase">
+        SELECT sc.id, sc.company_id AS companyId, sc.employee_id AS employeeId,
+               sc.case_type AS caseType, sc.initiator_role AS initiatorRole,
+               sc.initiator_user_id AS initiatorUserId, sc.reason_category AS reasonCategory,
+               sc.reason_details AS reasonDetails, sc.submission_date AS submissionDate,
+               sc.requested_last_working_day AS requestedLastWorkingDay,
+               sc.approved_last_working_day AS approvedLastWorkingDay,
+               sc.notice_period_days AS noticePeriodDays,
+               sc.is_notice_waived AS isNoticeWaived,
+               sc.notice_shortfall_days AS noticeShortfallDays,
+               sc.status, sc.handover_notes AS handoverNotes,
+               sc.manager_approval_status AS managerApprovalStatus,
+               sc.manager_remarks AS managerRemarks,
+               sc.manager_reviewed_at AS managerReviewedAt,
+               sc.manager_reviewed_by AS managerReviewedBy,
+               sc.hr_approval_status AS hrApprovalStatus,
+               sc.hr_remarks AS hrRemarks,
+               sc.hr_reviewed_at AS hrReviewedAt,
+               sc.hr_reviewed_by AS hrReviewedBy,
+               sc.exit_interview_completed AS exitInterviewCompleted,
+               sc.exit_interview_notes AS exitInterviewNotes,
+               sc.user_deactivated_at AS userDeactivatedAt,
+               sc.finalized_by AS finalizedBy,
+               sc.finalized_at AS finalizedAt,
+               sc.created_at AS createdAt,
+               sc.updated_at AS updatedAt,
+               e.employee_code AS employeeCode,
+               e.first_name AS firstName,
+               e.last_name AS lastName,
+               e.work_email AS workEmail,
+               d.name AS departmentName,
+               des.title AS designationTitle,
+               TRIM(CONCAT(mgr.first_name, ' ', mgr.last_name)) AS reportingManagerName
+        FROM separation_cases sc
+        JOIN employees e ON e.id = sc.employee_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN designations des ON des.id = e.designation_id
+        LEFT JOIN employees mgr ON mgr.id = e.reporting_manager_id
+        WHERE sc.company_id = #{companyId}
+        <if test="status != null and status != '' and status != 'ALL'">
+            AND sc.status = #{status}
+        </if>
+        <if test="employeeId != null">
+            AND sc.employee_id = #{employeeId}
+        </if>
+        ORDER BY sc.created_at DESC
+    </select>
+
+    <!-- ── Clearances ── -->
+    <insert id="insertExitClearance" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO exit_clearances (
+            separation_case_id, company_id, department_type, title, description,
+            status, cleared_by_user_id, cleared_at, deduction_amount, remarks
+        ) VALUES (
+            #{separationCaseId}, #{companyId}, #{departmentType}, #{title}, #{description},
+            #{status}, #{clearedByUserId}, #{clearedAt}, #{deductionAmount}, #{remarks}
+        )
+    </insert>
+
+    <select id="findClearancesByCaseId" resultType="com.priyex.hrms.separation.model.ExitClearance">
+        SELECT ec.id, ec.separation_case_id AS separationCaseId, ec.company_id AS companyId,
+               ec.department_type AS departmentType, ec.title, ec.description, ec.status,
+               ec.cleared_by_user_id AS clearedByUserId,
+               u.full_name AS clearedByUserName,
+               ec.cleared_at AS clearedAt,
+               ec.deduction_amount AS deductionAmount,
+               ec.remarks, ec.created_at AS createdAt, ec.updated_at AS updatedAt
+        FROM exit_clearances ec
+        LEFT JOIN users u ON u.id = ec.cleared_by_user_id
+        WHERE ec.separation_case_id = #{separationCaseId}
+        ORDER BY ec.id ASC
+    </select>
+
+    <select id="findClearanceById" resultType="com.priyex.hrms.separation.model.ExitClearance">
+        SELECT ec.id, ec.separation_case_id AS separationCaseId, ec.company_id AS companyId,
+               ec.department_type AS departmentType, ec.title, ec.description, ec.status,
+               ec.cleared_by_user_id AS clearedByUserId,
+               u.full_name AS clearedByUserName,
+               ec.cleared_at AS clearedAt,
+               ec.deduction_amount AS deductionAmount,
+               ec.remarks, ec.created_at AS createdAt, ec.updated_at AS updatedAt
+        FROM exit_clearances ec
+        LEFT JOIN users u ON u.id = ec.cleared_by_user_id
+        WHERE ec.id = #{id} AND ec.company_id = #{companyId}
+    </select>
+
+    <update id="updateExitClearance">
+        UPDATE exit_clearances
+        SET status = #{status},
+            cleared_by_user_id = #{clearedByUserId},
+            cleared_at = #{clearedAt},
+            deduction_amount = #{deductionAmount},
+            remarks = #{remarks},
+            updated_at = NOW()
+        WHERE id = #{id} AND company_id = #{companyId}
+    </update>
+
+    <!-- ── System Access Lockout & Employee Exited Update ── -->
+    <update id="deactivateUserByEmployeeId">
+        UPDATE users
+        SET is_active = FALSE, updated_at = NOW()
+        WHERE employee_id = #{employeeId} AND company_id = #{companyId}
+    </update>
+
+    <update id="updateEmployeeExitStatus">
+        UPDATE employees
+        SET status = #{status},
+            exit_date = #{exitDate},
+            exit_reason = #{exitReason},
+            updated_at = NOW()
+        WHERE id = #{employeeId} AND company_id = #{companyId}
+    </update>
+
+</mapper>
