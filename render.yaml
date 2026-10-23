@@ -25,3 +25,5 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: APP_PLATFORM_URL
+        value: https://www.priyex.com

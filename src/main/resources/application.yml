@@ -98,6 +98,7 @@ app:
     secret: ${JWT_SECRET:CHANGE-THIS-IN-PRODUCTION-hrms-256-bit-secret-key-min-32-chars!!}
     access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION:3600000}
     refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000}
+  platform-url: ${APP_PLATFORM_URL:https://www.priyex.com}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,https://priyex.com,https://www.priyex.com,https://priyex-hrms.vercel.app,https://*.vercel.app,*}
   file:
