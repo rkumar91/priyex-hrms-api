@@ -51,7 +51,6 @@ spring:
     port: ${SPRING_MAIL_PORT:587}
     username: ${SPRING_MAIL_USERNAME:tech.priyex@gmail.com}
     password: ${SPRING_MAIL_PASSWORD:njifpfmtidynvvud}
-    from: ${SPRING_MAIL_FROM:tech.priyex@gmail.com}
     properties:
       mail:
         smtp:
@@ -106,6 +105,7 @@ app:
     allowed-extensions: pdf,png,jpg,jpeg,gif,doc,docx,xls,xlsx,csv,txt,zip
     max-size-mb: 10
   mail:
+    from: ${SPRING_MAIL_FROM:tech.priyex@gmail.com}
     alert-recipients: ${APP_MAIL_ALERT_RECIPIENTS:tech.priyex@gmail.com,in.rkumar91@gmail.com}
   brevo:
     api-key: ${BREVO_API_KEY:}
@@ -153,9 +153,9 @@ springdoc:
 logging:
   level:
     root: INFO
-    com.priyex.hrms: DEBUG
-    org.mybatis: INFO
-    org.springframework.security: INFO
-    org.flywaydb: INFO
+    '[com.priyex.hrms]': DEBUG
+    '[org.mybatis]': INFO
+    '[org.springframework.security]': INFO
+    '[org.flywaydb]': INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"

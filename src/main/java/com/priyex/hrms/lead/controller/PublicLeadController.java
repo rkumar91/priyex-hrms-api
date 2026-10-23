@@ -22,7 +22,6 @@ import com.priyex.hrms.common.whatsapp.service.WhatsAppService;
 import com.priyex.hrms.lead.mapper.LeadInquiryMapper;
 import com.priyex.hrms.lead.model.LeadInquiry;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/v1/public")

@@ -27,7 +27,7 @@ public class EmailServiceImpl implements EmailService {
     private final EmailLogMapper emailLogMapper;
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
-    @Value("${spring.mail.from:tech.priyex@gmail.com}")
+    @Value("${app.mail.from:${spring.mail.from:tech.priyex@gmail.com}}")
     private String fromEmail;
 
     @Value("${app.platform-url:https://www.priyex.com}")
@@ -52,6 +52,7 @@ public class EmailServiceImpl implements EmailService {
         return dispatchEmail(recipientEmail, subject, body, null, templateCode);
     }
 
+    @SuppressWarnings({"null", "rawtypes", "unchecked"})
     private boolean dispatchEmail(String recipientEmail, String subject, String body, String htmlBody, String templateCode) {
         log.info(
                 "\n══════════════════ [EMAIL DISPATCH via Brevo/Resend/SMTP] ══════════════════\nTo: {}\nSubject: {}\n\n{}\n══════════════════════════════════════════════════════════════",
@@ -64,7 +65,7 @@ public class EmailServiceImpl implements EmailService {
         if (brevoApiKey != null && !brevoApiKey.isBlank()) {
             RestClient brevoClient = RestClient.builder().baseUrl("https://api.brevo.com/v3").build();
             List<String> recipients = Arrays.stream(recipientEmail.split(","))
-                    .map(String::trim)
+                    .map(r -> r.trim())
                     .filter(s -> !s.isEmpty())
                     .toList();
 
@@ -86,7 +87,7 @@ public class EmailServiceImpl implements EmailService {
                                 "textContent", body != null ? body : "");
                     }
 
-                    Map response = brevoClient.post()
+                    Map<?, ?> response = brevoClient.post()
                             .uri("/smtp/email")
                             .header("api-key", brevoApiKey)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -109,7 +110,7 @@ public class EmailServiceImpl implements EmailService {
         if (!sentReal && resendApiKey != null && !resendApiKey.isBlank()) {
             RestClient restClient = RestClient.builder().baseUrl("https://api.resend.com").build();
             List<String> recipients = Arrays.stream(recipientEmail.split(","))
-                    .map(String::trim)
+                    .map(r -> r.trim())
                     .filter(s -> !s.isEmpty())
                     .toList();
 
@@ -131,7 +132,7 @@ public class EmailServiceImpl implements EmailService {
                                 "text", body != null ? body : "");
                     }
 
-                    Map response = restClient.post()
+                    Map<?, ?> response = restClient.post()
                             .uri("/emails")
                             .header("Authorization", "Bearer " + resendApiKey)
                             .contentType(MediaType.APPLICATION_JSON)

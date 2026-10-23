@@ -44,6 +44,7 @@ public class WhatsAppServiceImpl implements WhatsAppService {
 
     @Override
     @Async
+    @SuppressWarnings({"null", "rawtypes", "unchecked"})
     public boolean sendDemoBookingConfirmation(String phoneNumber,
                                                String recipientName,
                                                String companyName,
@@ -95,7 +96,7 @@ public class WhatsAppServiceImpl implements WhatsAppService {
                 );
 
                 String endpoint = "/" + phoneNumberId + "/messages";
-                Map response = restClient.post()
+                Map<?, ?> response = restClient.post()
                         .uri(endpoint)
                         .header("Authorization", "Bearer " + apiToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -138,6 +139,7 @@ public class WhatsAppServiceImpl implements WhatsAppService {
 
     @Override
     @Async
+    @SuppressWarnings({"null", "rawtypes", "unchecked"})
     public boolean sendInternalSalesAlert(String recipientPhone,
                                           String companyName,
                                           String contactPerson,
@@ -194,7 +196,7 @@ public class WhatsAppServiceImpl implements WhatsAppService {
                 );
 
                 String endpoint = "/" + phoneNumberId + "/messages";
-                Map response = restClient.post()
+                Map<?, ?> response = restClient.post()
                         .uri(endpoint)
                         .header("Authorization", "Bearer " + apiToken)
                         .contentType(MediaType.APPLICATION_JSON)

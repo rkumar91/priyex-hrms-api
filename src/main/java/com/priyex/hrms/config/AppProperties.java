@@ -19,6 +19,11 @@ public class AppProperties {
     private Jwt jwt = new Jwt();
     private Cors cors = new Cors();
     private FileConfig file = new FileConfig();
+    private String platformUrl = "https://www.priyex.com";
+    private Mail mail = new Mail();
+    private Brevo brevo = new Brevo();
+    private Resend resend = new Resend();
+    private Whatsapp whatsapp = new Whatsapp();
 
     public AppProperties() {
     }
@@ -51,6 +56,51 @@ public class AppProperties {
         private int maxSizeMb = 10;
 
         public FileConfig() {
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Mail {
+        private String from = "tech.priyex@gmail.com";
+        private String alertRecipients = "tech.priyex@gmail.com,in.rkumar91@gmail.com";
+
+        public Mail() {
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Brevo {
+        private String apiKey = "";
+        private String senderName = "Priyex People HR Operations";
+
+        public Brevo() {
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Resend {
+        private String apiKey = "";
+        private String fromEmail = "Priyex HRMS <onboarding@resend.dev>";
+
+        public Resend() {
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Whatsapp {
+        private boolean enabled = true;
+        private String provider = "META_CLOUD";
+        private String businessPhone = "+919901694683";
+        private String apiToken = "";
+        private String phoneNumberId = "";
+        private String apiUrl = "https://graph.facebook.com/v20.0";
+        private String salesAlertPhone = "+919901694683";
+
+        public Whatsapp() {
         }
     }
 }
