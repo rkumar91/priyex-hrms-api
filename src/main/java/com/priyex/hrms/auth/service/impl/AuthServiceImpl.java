@@ -113,6 +113,37 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
+        // Multi-tenant workspace validation: Ensure user belongs to the requested workspace
+        List<String> userRoles = userMapper.findRolesByUserId(user.getId());
+        boolean isSuperAdmin = userRoles.contains("SUPER_ADMIN");
+
+        if (!isSuperAdmin) {
+            Long targetCompanyId = request.getCompanyId();
+            if (targetCompanyId == null && request.getCompanyCode() != null && !request.getCompanyCode().isBlank()) {
+                var comp = companyMapper.findByIdentifier(request.getCompanyCode().trim());
+                if (comp != null) {
+                    targetCompanyId = comp.getId();
+                }
+            }
+
+            if (targetCompanyId != null && user.getCompanyId() != null && !targetCompanyId.equals(user.getCompanyId())) {
+                var selectedCompany = companyMapper.findById(targetCompanyId);
+                var userActualCompany = companyMapper.findById(user.getCompanyId());
+
+                String selectedName = (selectedCompany != null && selectedCompany.getBrandName() != null)
+                        ? selectedCompany.getBrandName() : "the selected workspace";
+                String actualName = (userActualCompany != null && userActualCompany.getBrandName() != null)
+                        ? userActualCompany.getBrandName() : "their registered organization";
+
+                loginAuditMapper.insert(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent,
+                        "Workspace mismatch: user registered under " + actualName + " (id=" + user.getCompanyId()
+                        + ") attempted login via workspace " + selectedName + " (id=" + targetCompanyId + ")");
+
+                throw new BadCredentialsException("Account " + user.getEmail() + " belongs to " + actualName
+                        + ", not " + selectedName + ". Please change your company workspace to sign in.");
+            }
+        }
+
         String accessToken = jwtTokenProvider.generateAccessToken(principal);
         String refreshToken = jwtTokenProvider.generateRefreshToken(principal);
 
