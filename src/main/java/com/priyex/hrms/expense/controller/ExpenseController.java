@@ -35,7 +35,7 @@ public class ExpenseController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all expense claims for current company")
+    @Operation(summary = "Get expense claims scoped by user role (Employee sees own, Manager sees team, HR/Admin sees corporate)")
     public ResponseEntity<ApiResponse<List<ExpenseClaim>>> listExpenses(
             @CurrentUser UserPrincipal currentUser,
             @RequestParam(name = "status", required = false) String status,
@@ -45,16 +45,44 @@ public class ExpenseController {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long employeeId = currentUser != null ? currentUser.getEmployeeId() : null;
 
-        if ("team".equalsIgnoreCase(scope) && employeeId != null) {
-            List<ExpenseClaim> teamList = expenseMapper.findByManagerEmployeeId(employeeId, companyId);
-            return ResponseEntity.ok(ApiResponse.success(teamList));
-        }
+        boolean isHr = currentUser != null && (
+                currentUser.hasRole("HR_ADMIN") ||
+                currentUser.hasRole("HR") ||
+                currentUser.hasRole("ADMIN") ||
+                currentUser.hasRole("COMPANY_ADMIN") ||
+                currentUser.hasRole("SUPER_ADMIN") ||
+                currentUser.hasRole("PLATFORM_ADMIN")
+        );
+        boolean isManager = currentUser != null && (isHr || currentUser.hasRole("MANAGER"));
 
+        // 1. Explicitly requested user's own claims
         if ("mine".equalsIgnoreCase(scope) && employeeId != null) {
             List<ExpenseClaim> myList = expenseMapper.findByEmployeeId(employeeId, companyId);
             return ResponseEntity.ok(ApiResponse.success(myList));
         }
 
+        // 2. Explicitly requested manager's direct report claims
+        if ("team".equalsIgnoreCase(scope) && employeeId != null) {
+            List<ExpenseClaim> teamList = expenseMapper.findByManagerEmployeeId(employeeId, companyId);
+            return ResponseEntity.ok(ApiResponse.success(teamList));
+        }
+
+        // 3. Role-based fallback:
+        // Standard Employee: ALWAYS restricted to their own claims
+        if (!isHr && !isManager) {
+            List<ExpenseClaim> myList = employeeId != null
+                    ? expenseMapper.findByEmployeeId(employeeId, companyId)
+                    : Collections.emptyList();
+            return ResponseEntity.ok(ApiResponse.success(myList));
+        }
+
+        // Manager (non-HR): defaults to their team's claims
+        if (!isHr && isManager && employeeId != null) {
+            List<ExpenseClaim> teamList = expenseMapper.findByManagerEmployeeId(employeeId, companyId);
+            return ResponseEntity.ok(ApiResponse.success(teamList));
+        }
+
+        // HR / Admin: full corporate register access
         List<ExpenseClaim> list = expenseMapper.findAll(companyId, status, category);
         return ResponseEntity.ok(ApiResponse.success(list));
     }
@@ -139,6 +167,26 @@ public class ExpenseController {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long managerEmpId = currentUser != null ? currentUser.getEmployeeId() : null;
 
+        ExpenseClaim claim = expenseMapper.findById(id, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("ExpenseClaim", "id", id));
+
+        // Self-approval prohibition
+        if (managerEmpId != null && managerEmpId.equals(claim.getEmployeeId())) {
+            throw new BadRequestException("Self-approval is prohibited. You cannot review or approve your own expense claim.");
+        }
+
+        boolean isHr = currentUser != null && (
+                currentUser.hasRole("HR_ADMIN") ||
+                currentUser.hasRole("SUPER_ADMIN") ||
+                currentUser.hasRole("ADMIN") ||
+                currentUser.hasRole("COMPANY_ADMIN")
+        );
+        boolean isDirectManager = managerEmpId != null && managerEmpId.equals(claim.getManagerId());
+
+        if (!isHr && !isDirectManager) {
+            throw new BadRequestException("Unauthorized: Only the designated reporting manager or HR/Finance administrator can review this claim.");
+        }
+
         expenseMapper.updateManagerDecision(id, companyId, "PENDING_HR", comment != null ? comment : "Approved by Manager", managerEmpId);
         ExpenseClaim updated = expenseMapper.findById(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("ExpenseClaim", "id", id));
@@ -154,6 +202,26 @@ public class ExpenseController {
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long managerEmpId = currentUser != null ? currentUser.getEmployeeId() : null;
+
+        ExpenseClaim claim = expenseMapper.findById(id, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("ExpenseClaim", "id", id));
+
+        // Self-rejection / Self-approval prohibition
+        if (managerEmpId != null && managerEmpId.equals(claim.getEmployeeId())) {
+            throw new BadRequestException("Self-action is prohibited on your own expense claim.");
+        }
+
+        boolean isHr = currentUser != null && (
+                currentUser.hasRole("HR_ADMIN") ||
+                currentUser.hasRole("SUPER_ADMIN") ||
+                currentUser.hasRole("ADMIN") ||
+                currentUser.hasRole("COMPANY_ADMIN")
+        );
+        boolean isDirectManager = managerEmpId != null && managerEmpId.equals(claim.getManagerId());
+
+        if (!isHr && !isDirectManager) {
+            throw new BadRequestException("Unauthorized: Only the designated reporting manager or HR/Finance administrator can review this claim.");
+        }
 
         expenseMapper.updateManagerDecision(id, companyId, "REJECTED_MANAGER", comment != null ? comment : "Rejected by Manager", managerEmpId);
         ExpenseClaim updated = expenseMapper.findById(id, companyId)
@@ -171,6 +239,15 @@ public class ExpenseController {
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long actorUserId = currentUser != null ? currentUser.getId() : 1L;
+        Long actorEmpId = currentUser != null ? currentUser.getEmployeeId() : null;
+
+        ExpenseClaim claim = expenseMapper.findById(id, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("ExpenseClaim", "id", id));
+
+        // Prevent HR self-approval
+        if (actorEmpId != null && actorEmpId.equals(claim.getEmployeeId())) {
+            throw new BadRequestException("Self-approval is prohibited. An HR / Finance administrator cannot sign off on their own expense claim.");
+        }
 
         expenseMapper.updateHrDecision(id, companyId, "APPROVED", comment != null ? comment : "Approved by HR / Finance", actorUserId);
         ExpenseClaim updated = expenseMapper.findById(id, companyId)
@@ -188,6 +265,15 @@ public class ExpenseController {
     ) {
         Long companyId = (currentUser != null && currentUser.getCompanyId() != null) ? currentUser.getCompanyId() : 1L;
         Long actorUserId = currentUser != null ? currentUser.getId() : 1L;
+        Long actorEmpId = currentUser != null ? currentUser.getEmployeeId() : null;
+
+        ExpenseClaim claim = expenseMapper.findById(id, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("ExpenseClaim", "id", id));
+
+        // Prevent HR self-action
+        if (actorEmpId != null && actorEmpId.equals(claim.getEmployeeId())) {
+            throw new BadRequestException("Self-action is prohibited on your own expense claim.");
+        }
 
         expenseMapper.updateHrDecision(id, companyId, "REJECTED_HR", comment != null ? comment : "Non-compliant with expense policy limits", actorUserId);
         ExpenseClaim updated = expenseMapper.findById(id, companyId)
