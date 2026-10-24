@@ -96,8 +96,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({AuthenticationException.class, BadCredentialsException.class})
     public ResponseEntity<ApiResponse<Void>> handleAuthError(Exception ex) {
+        String message = (ex.getMessage() != null && !ex.getMessage().isBlank() && !ex.getMessage().equalsIgnoreCase("Bad credentials"))
+                ? ex.getMessage()
+                : "Invalid email or password";
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Authentication failed"));
+                .body(ApiResponse.error(message));
     }
 
     /* ── HTTP / Servlet ── */

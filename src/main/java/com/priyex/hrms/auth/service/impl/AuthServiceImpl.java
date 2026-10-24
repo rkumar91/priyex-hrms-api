@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -70,14 +71,14 @@ public class AuthServiceImpl implements AuthService {
 
         // Don't reveal whether user exists
         if (user == null) {
-            loginAuditMapper.insert(null, request.getEmail(), "LOGIN_FAILED", ipAddress, userAgent, "User not found");
+            safeAudit(null, request.getEmail(), "LOGIN_FAILED", ipAddress, userAgent, "User not found");
             throw new BadCredentialsException("Invalid email or password");
         }
 
         // Check if account is locked
         if (user.isLocked()) {
             if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(Instant.now())) {
-                loginAuditMapper.insert(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent, "Account locked");
+                safeAudit(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent, "Account locked");
                 throw new LockedException("Account is locked. Please try again later.");
             }
             // Lock expired, unlock
@@ -86,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Check if account is active
         if (!user.isActive()) {
-            loginAuditMapper.insert(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent, "Account inactive");
+            safeAudit(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent, "Account inactive");
             throw new BadCredentialsException("Invalid email or password");
         }
 
@@ -107,7 +108,7 @@ public class AuthServiceImpl implements AuthService {
         if (user.getCompanyId() != null) {
             com.priyex.hrms.organization.dto.CompanyDto company = companyMapper.findById(user.getCompanyId());
             if (company != null && Boolean.FALSE.equals(company.getIsActive())) {
-                loginAuditMapper.insert(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent,
+                safeAudit(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent,
                         "Organization workspace deactivated");
                 throw new BadCredentialsException("Your organization workspace has been suspended or deactivated. Please contact support.");
             }
@@ -123,6 +124,11 @@ public class AuthServiceImpl implements AuthService {
                 var comp = companyMapper.findByIdentifier(request.getCompanyCode().trim());
                 if (comp != null) {
                     targetCompanyId = comp.getId();
+                } else {
+                    safeAudit(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent,
+                            "Organization code not found: " + request.getCompanyCode());
+                    throw new BadCredentialsException("Organization / Company Code '" + request.getCompanyCode().trim()
+                            + "' not found in directory. Please verify your organization identifier.");
                 }
             }
 
@@ -135,19 +141,20 @@ public class AuthServiceImpl implements AuthService {
                 String actualName = (userActualCompany != null && userActualCompany.getBrandName() != null)
                         ? userActualCompany.getBrandName() : "their registered organization";
 
-                loginAuditMapper.insert(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent,
+                safeAudit(user.getId(), user.getEmail(), "LOGIN_FAILED", ipAddress, userAgent,
                         "Workspace mismatch: user registered under " + actualName + " (id=" + user.getCompanyId()
                         + ") attempted login via workspace " + selectedName + " (id=" + targetCompanyId + ")");
 
                 throw new BadCredentialsException("Account " + user.getEmail() + " belongs to " + actualName
-                        + ", not " + selectedName + ". Please change your company workspace to sign in.");
+                        + " (" + (userActualCompany != null ? userActualCompany.getCode() : "registered org") + "), not "
+                        + selectedName + " (" + request.getCompanyCode() + "). Please switch your Organization Code to sign in.");
             }
         }
 
         String accessToken = jwtTokenProvider.generateAccessToken(principal);
         String refreshToken = jwtTokenProvider.generateRefreshToken(principal);
 
-        loginAuditMapper.insert(user.getId(), user.getEmail(), "LOGIN_SUCCESS", ipAddress, userAgent, null);
+        safeAudit(user.getId(), user.getEmail(), "LOGIN_SUCCESS", ipAddress, userAgent, null);
 
         log.info("User logged in: {} from {}", user.getEmail(), ipAddress);
 
@@ -263,5 +270,16 @@ public class AuthServiceImpl implements AuthService {
                 .roles(principal.getRoles())
                 .permissions(principal.getPermissions())
                 .build();
+    }
+
+    private void safeAudit(Long userId, String email, String action, String ip, String ua, String details) {
+        try {
+            String safeIp = (ip != null && ip.length() > 45) ? ip.substring(0, 45) : ip;
+            String safeUa = (ua != null && ua.length() > 500) ? ua.substring(0, 500) : ua;
+            String safeDetails = (details != null && details.length() > 500) ? details.substring(0, 500) : details;
+            loginAuditMapper.insert(userId, email, action, safeIp, safeUa, safeDetails);
+        } catch (Exception ex) {
+            log.warn("Failed to insert login audit record: {}", ex.getMessage());
+        }
     }
 }
