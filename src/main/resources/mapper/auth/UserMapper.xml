@@ -107,6 +107,17 @@
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
+    <select id="findByCompanyId" resultMap="UserResultMap">
+        SELECT id, company_id, employee_id, email, password_hash, display_name,
+               avatar_url, phone, is_active, is_locked, failed_login_attempts,
+               locked_until, last_login_at, password_changed_at, must_change_password,
+               created_at, created_by, updated_at, updated_by, version
+        FROM users
+        WHERE company_id = #{companyId}
+        ORDER BY id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
     <delete id="deleteUserRoles">
         DELETE FROM user_roles WHERE user_id = #{userId}
     </delete>

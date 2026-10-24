@@ -36,6 +36,8 @@ public interface UserMapper {
 
     List<User> findAll(@Param("offset") int offset, @Param("limit") int limit);
 
+    List<User> findByCompanyId(@Param("companyId") Long companyId, @Param("offset") int offset, @Param("limit") int limit);
+
     void deleteUserRoles(@Param("userId") Long userId);
 
     void insertUserRole(@Param("userId") Long userId, @Param("roleId") Long roleId, @Param("assignedBy") Long assignedBy);

@@ -18,6 +18,8 @@ public class AdminUserResponse {
     private String displayName;
     private String avatarUrl;
     private Long employeeId;
+    private Long companyId;
+    private String companyName;
     private boolean active;
     private List<String> roles;
     private Instant lastLoginAt;
