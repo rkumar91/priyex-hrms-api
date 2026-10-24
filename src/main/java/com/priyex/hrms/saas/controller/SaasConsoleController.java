@@ -327,7 +327,7 @@ public class SaasConsoleController {
         return ResponseEntity.ok(ApiResponse.success(null, "Customer request updated."));
     }
 
-    @GetMapping("/audit-logs")
+    @GetMapping({"/audit-logs", "/audit-events"})
     @Operation(summary = "Get SaaS control plane audit history")
     public ResponseEntity<ApiResponse<List<SaasAuditEvent>>> getAuditLogs(
             @RequestParam(name = "limit", defaultValue = "50") int limit) {
