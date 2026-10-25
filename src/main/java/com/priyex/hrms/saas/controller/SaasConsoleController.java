@@ -1,6 +1,7 @@
 package com.priyex.hrms.saas.controller;
 
 import com.priyex.hrms.common.response.ApiResponse;
+import com.priyex.hrms.lead.model.LeadActivity;
 import com.priyex.hrms.lead.model.LeadInquiry;
 import com.priyex.hrms.saas.mapper.SaasConsoleMapper;
 import com.priyex.hrms.saas.model.*;
@@ -14,8 +15,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -45,8 +49,23 @@ public class SaasConsoleController {
         return ResponseEntity.ok(ApiResponse.success(leads));
     }
 
+    private static final Set<String> LEAD_STAGES = Set.of(
+            "NEW", "CONTACTED", "QUALIFIED", "DEMO_SCHEDULED", "PROPOSAL_SENT",
+            "NEGOTIATION", "CONVERTED", "LOST", "CLOSED");
+
+    private static final Set<String> LEAD_ACTIVITY_TYPES = Set.of(
+            "NOTE", "CALL", "EMAIL", "WHATSAPP", "MEETING");
+
+    /** Parses an optional ISO-8601 instant sent by the UI; blank means "not provided". */
+    private static Instant parseFollowUp(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return Instant.parse(raw.trim());
+    }
+
     @PutMapping("/leads/{id}/status")
-    @Operation(summary = "Update lead pipeline stage")
+    @Operation(summary = "Update lead pipeline stage and record the conversation note in the lead history")
     public ResponseEntity<ApiResponse<Void>> updateLeadStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> body,
@@ -55,10 +74,54 @@ public class SaasConsoleController {
         if (status == null || status.isBlank()) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Status is required"));
         }
-        saasConsoleMapper.updateLeadStatus(id, status.trim().toUpperCase());
+        String newStatus = status.trim().toUpperCase();
+        if (!LEAD_STAGES.contains(newStatus)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Unknown pipeline stage: " + status));
+        }
+
+        LeadInquiry lead = saasConsoleMapper.findLeadById(id);
+        if (lead == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error("Lead not found"));
+        }
+
+        Instant followUp;
+        try {
+            followUp = parseFollowUp(body.get("nextFollowUpAt"));
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid follow-up date"));
+        }
+
+        String oldStatus = lead.getStatus() != null ? lead.getStatus() : "NEW";
+        String note = body.get("note");
+        if (note == null || note.isBlank()) {
+            note = "Stage changed from " + oldStatus + " to " + newStatus;
+        }
         String actor = auth != null ? auth.getName() : "system";
+
+        saasConsoleMapper.updateLeadStatus(id, newStatus);
+        if ("CONVERTED".equals(newStatus) || "LOST".equals(newStatus) || "CLOSED".equals(newStatus)) {
+            // Pipeline is finished, nothing left to follow up on.
+            saasConsoleMapper.updateLeadFollowUp(id, null);
+            followUp = null;
+        } else if (followUp != null) {
+            saasConsoleMapper.updateLeadFollowUp(id, followUp);
+        }
+        if (!"NEW".equals(newStatus)) {
+            saasConsoleMapper.touchLeadContact(id);
+        }
+
+        saasConsoleMapper.insertLeadActivity(LeadActivity.builder()
+                .leadId(id)
+                .activityType("STAGE_CHANGE")
+                .fromStatus(oldStatus)
+                .toStatus(newStatus)
+                .note(note.trim())
+                .nextFollowUpAt(followUp)
+                .createdBy(actor)
+                .build());
+
         saasConsoleMapper.insertAuditEvent(actor, "UPDATE_LEAD_STATUS", "LEAD", String.valueOf(id),
-                "Updated lead status to " + status, null, "127.0.0.1");
+                "Moved lead " + lead.getInquiryRef() + " from " + oldStatus + " to " + newStatus, note.trim(), "127.0.0.1");
         return ResponseEntity.ok(ApiResponse.success(null, "Lead status updated."));
     }
 
@@ -71,12 +134,82 @@ public class SaasConsoleController {
         String dropReason = body.getOrDefault("dropReason", "Not Qualified");
         String notes = body.getOrDefault("notes", "");
 
-        saasConsoleMapper.updateLeadStatus(id, "LOST");
-
+        LeadInquiry lead = saasConsoleMapper.findLeadById(id);
+        if (lead == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error("Lead not found"));
+        }
+        String oldStatus = lead.getStatus() != null ? lead.getStatus() : "NEW";
         String actor = auth != null ? auth.getName() : "system";
+
+        saasConsoleMapper.updateLeadStatus(id, "LOST");
+        saasConsoleMapper.updateLeadDropReason(id, dropReason);
+        saasConsoleMapper.updateLeadFollowUp(id, null);
+        saasConsoleMapper.insertLeadActivity(LeadActivity.builder()
+                .leadId(id)
+                .activityType("DROPPED")
+                .fromStatus(oldStatus)
+                .toStatus("LOST")
+                .note("Reason: " + dropReason + (notes.isBlank() ? "" : " — " + notes.trim()))
+                .createdBy(actor)
+                .build());
+
         saasConsoleMapper.insertAuditEvent(actor, "DROP_LEAD_INQUIRY", "LEAD", String.valueOf(id),
                 "Dropped Lead. Reason: " + dropReason, notes, "127.0.0.1");
         return ResponseEntity.ok(ApiResponse.success(null, "Lead dropped and archived."));
+    }
+
+    @GetMapping("/leads/{id}/activities")
+    @Operation(summary = "Get the full conversation history (notes, calls, stage changes) of a lead")
+    public ResponseEntity<ApiResponse<List<LeadActivity>>> getLeadActivities(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(saasConsoleMapper.findLeadActivities(id)));
+    }
+
+    @PostMapping("/leads/{id}/activities")
+    @Operation(summary = "Log a note, call, email, WhatsApp message or meeting against a lead")
+    public ResponseEntity<ApiResponse<LeadActivity>> addLeadActivity(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            Authentication auth) {
+        String note = body.get("note");
+        if (note == null || note.isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("A note describing the conversation is required"));
+        }
+        String type = body.getOrDefault("activityType", "NOTE").trim().toUpperCase();
+        if (!LEAD_ACTIVITY_TYPES.contains(type)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Unknown activity type: " + type));
+        }
+        LeadInquiry lead = saasConsoleMapper.findLeadById(id);
+        if (lead == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error("Lead not found"));
+        }
+
+        Instant followUp;
+        try {
+            followUp = parseFollowUp(body.get("nextFollowUpAt"));
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid follow-up date"));
+        }
+
+        String actor = auth != null ? auth.getName() : "system";
+        LeadActivity activity = LeadActivity.builder()
+                .leadId(id)
+                .activityType(type)
+                .note(note.trim())
+                .nextFollowUpAt(followUp)
+                .createdBy(actor)
+                .build();
+        saasConsoleMapper.insertLeadActivity(activity);
+
+        if (followUp != null) {
+            saasConsoleMapper.updateLeadFollowUp(id, followUp);
+        }
+        if (!"NOTE".equals(type)) {
+            saasConsoleMapper.touchLeadContact(id);
+        }
+
+        saasConsoleMapper.insertAuditEvent(actor, "LOG_LEAD_ACTIVITY", "LEAD", String.valueOf(id),
+                "Logged " + type + " on lead " + lead.getInquiryRef(), note.trim(), "127.0.0.1");
+        return ResponseEntity.ok(ApiResponse.success(activity, "Activity recorded."));
     }
 
     @GetMapping("/accounts")

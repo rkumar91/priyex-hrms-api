@@ -28,6 +28,9 @@ public class LeadInquiry {
     private String assignedConsultant;
     private String emailStatus; // PENDING, SENT, FAILED
     private String whatsappStatus; // PENDING, SENT, MOCK_SENT, SKIPPED, FAILED
+    private Instant nextFollowUpAt;
+    private Instant lastContactedAt;
+    private String dropReason;
     private Instant createdAt;
     private Instant updatedAt;
 }

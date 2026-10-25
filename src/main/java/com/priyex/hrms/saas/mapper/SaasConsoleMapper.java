@@ -1,5 +1,6 @@
 package com.priyex.hrms.saas.mapper;
 
+import com.priyex.hrms.lead.model.LeadActivity;
 import com.priyex.hrms.lead.model.LeadInquiry;
 import com.priyex.hrms.saas.model.*;
 import org.apache.ibatis.annotations.*;
@@ -259,6 +260,33 @@ public interface SaasConsoleMapper {
 
     @Update("UPDATE lead_inquiries SET status = #{status}, updated_at = NOW() WHERE id = #{id}")
     int updateLeadStatus(@Param("id") Long id, @Param("status") String status);
+
+    @Select("SELECT * FROM lead_inquiries WHERE id = #{id}")
+    LeadInquiry findLeadById(@Param("id") Long id);
+
+    /** Sets or clears (null) the next scheduled follow-up for a lead. */
+    @Update("UPDATE lead_inquiries SET next_follow_up_at = #{at, jdbcType=TIMESTAMP}, updated_at = NOW() WHERE id = #{id}")
+    int updateLeadFollowUp(@Param("id") Long id, @Param("at") java.time.Instant at);
+
+    @Update("UPDATE lead_inquiries SET last_contacted_at = NOW(), updated_at = NOW() WHERE id = #{id}")
+    int touchLeadContact(@Param("id") Long id);
+
+    @Update("UPDATE lead_inquiries SET drop_reason = #{reason}, updated_at = NOW() WHERE id = #{id}")
+    int updateLeadDropReason(@Param("id") Long id, @Param("reason") String reason);
+
+    @Insert("""
+        INSERT INTO lead_activities (
+            lead_id, activity_type, from_status, to_status, note, next_follow_up_at, created_by, created_at
+        ) VALUES (
+            #{leadId}, #{activityType}, #{fromStatus}, #{toStatus}, #{note},
+            #{nextFollowUpAt, jdbcType=TIMESTAMP}, #{createdBy}, NOW()
+        )
+    """)
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insertLeadActivity(LeadActivity activity);
+
+    @Select("SELECT * FROM lead_activities WHERE lead_id = #{leadId} ORDER BY created_at DESC, id DESC")
+    List<LeadActivity> findLeadActivities(@Param("leadId") Long leadId);
 
     @Insert("""
         INSERT INTO saas_audit_events (actor_email, action_type, target_entity, target_id, summary, details_json, ip_address, created_at)
